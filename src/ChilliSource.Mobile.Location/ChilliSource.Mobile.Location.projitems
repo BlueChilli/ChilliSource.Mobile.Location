@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>{958A7114-4661-42A7-97C4-89E0A8BC8069}</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>ChilliSource.Mobile.Location</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Google\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Services\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Helpers\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Effects\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Google\Maps\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Google\Places\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Google\Maps\Roads\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Entities\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Enums\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Services\ILocationService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers\MapHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Effects\NonInteractiveMapEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Request.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\DirectionsManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\ResponseModels\BaseResponseModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\ResponseModels\Coordinate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\ResponseModels\RouteLeg.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\ResponseModels\Route.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\ResponseModels\TextValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Cache\ICaching.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Cache\CachingProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\AutocompleteRequest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\DetailsResult.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\PlaceResult.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\ResponseStatus.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\PlacesService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\PlacesURLBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Roads\SnapToRoadsManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Roads\ResponseModels\BaseResponseModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Roads\ResponseModels\SnappedPoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers\LocationHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\TravelMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\UnitType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\TrafficModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\ResponseStatus.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Enums\GeolocationErrorType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\PositionErrorEventArgs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\GeolocationException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\Position.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\PositionEventArgs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Waypoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Roads\ResponseModels\Location.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Enums\LocationAuthorizationType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\RequestURLBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\ResponseModels\Step.cs" />
+  </ItemGroup>
+</Project>

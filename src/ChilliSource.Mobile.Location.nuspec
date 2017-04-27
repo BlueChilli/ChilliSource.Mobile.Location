@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>ChilliSource.Mobile.Location</id>
+    <version>$version$</version>
+    <title>ChilliSource Mobile Location</title>
+    <description>Location Plugin</description>
+    <authors>$authors$</authors>
+    <owners>$owners$</owners>
+    <requireLicenseAcceptance>$requireLicenseAcceptance$</requireLicenseAcceptance>
+    <copyright>$copyright$</copyright>
+    <projectUrl>$projectUrl$</projectUrl>    
+    <licenseUrl>$licenceUrl$</licenseUrl>
+    <releaseNotes>$releaseNotes$</releaseNotes>
+    <tags>$tags$</tags>
+
+    <dependencies>
+      <group>
+        <dependency id="ChilliSource.Mobile.Core" version="1.0.0" />
+        <dependency id="Xamarin.Forms" version="2.3.2.127" />
+        <dependency id="Xamarin.Forms.Maps" version="2.3.2.127" />
+        <dependency id="Newtonsoft.Json" version="9.0.1" />
+        <dependency id="Humanizer.Core" version="2.1.0" />
+      </group>
+      <group targetFramework="MonoAndroid403">
+        <dependency id="Xamarin.GooglePlayServices.Base" version="42.1001.0" />
+    	<dependency id="Xamarin.GooglePlayServices.Basement" version="42.1001.0" />
+        <dependency id="Xamarin.GooglePlayServices.Maps" version="42.1001.0" />                
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+     <!-- Android -->
+    <file src="ChilliSource.Mobile.Location.Droid/bin/ChilliSource.Mobile.Location.dll" target="lib/MonoAndroid403/ChilliSource.Mobile.Location.dll" />
+
+    <!-- iOS -->
+    <file src="ChilliSource.Mobile.Location.iOS/bin/ChilliSource.Mobile.Location.dll" target="lib/Xamarin.iOS10/ChilliSource.Mobile.Location.dll" />
+ 
+  </files>
+</package>

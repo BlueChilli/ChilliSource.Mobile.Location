@@ -1,0 +1,22 @@
+{
+	"productName" : "ChilliSource Mobile Location",
+	"projectName" : "ChilliSource.Mobile.Location",
+	"githubOwner": "BlueChilli",
+	"githubRepository": "ChilliSource.Mobile.Location",
+	"packageWhiteList": ["ChilliSource.Mobile.Location"],
+	"solutionFile" : "../src/ChilliSource.Mobile.Location.sln",
+	"tags": [ "ChilliSource", "ChilliSource Mobile Location"],
+	"authors" : ["Blue Chilli Technology Pty Ltd"],
+	"copyright" : "Copyright Blue Chilli Technology Pty Ltd 2017",
+	"iconUrl": "https://avatars0.githubusercontent.com/u/5924219?v=3&s=200",
+	"testProjectDll": "",
+	"runUnitTests" : false,
+	"runSimulatorTests" : true,
+	"iosTestAppPath": "../src/ChilliSource.Mobile.Location.Tests.iOS/bin/iPhoneSimulator/Release/ChilliSource.Mobile.Location.Tests.app",
+	"androidTestAppPath":"../src/ChilliSource.Mobile.Location.Tests.Android/ChilliSource.Mobile.Location.Tests.Android.csproj",
+	"nuspecRootPath" : "../src/",
+	"testAppBundleId": "com.bluechilli.chillisource.mobile.tests",
+	"simulatorRuntimes": ["iOS 10.3", "iOS 10.2"],
+	"simulatorDevice" : "iPhone 6s",
+	"artifactDirectory" : "../build/artifacts/"
+}
