@@ -259,12 +259,16 @@ Action<string, string> unitTestAndroidApp = (packageId, projectFile) =>
 
 		Information(string.Format("Serial={0}, Model={1}, Product={2}, Device={3}", device.Serial, device.Model, device.Product,device.Device));
 		Information(string.Format("Installing {0}", packageId));
-		AdbInstall(artifactDirectory + packageId + "-Signed.apk", adbSettings);
+		var d = Directory(artifactDirectory);
+		var path = d.Path.CombineWithFilePath("./" + packageId + "-Signed.apk");
+		Information(string.Format("Installing Path {0}", path));
+		AdbInstall(path, adbSettings);
 		Thread.Sleep(60 * 1000);
 	
 		Information("Conducting Tests");
 		AdbShell(string.Format("am start -n {0}/{1} -c android.intent.category.LAUNCHER", packageId , "com.xunit.runneractivity"), adbSettings);
-	
+
+		Information("Getting the Results");
 		var logs = AdbLogcat(new AdbLogcatOptions() {
 		
 		}, "mono-stdout:I *:S", adbSettings);
@@ -367,61 +371,47 @@ Func<string, IDisposable> Block = message => {
 	return null;
 };
 
-Action<string,string> build = (solution, configuration) =>
+Action<string,string,string> build = (solution, configuration, platform) =>
 {
     Information("Building {0}", solution);
 	using(BuildBlock("Build")) 
 	{			
-        if(isRunningOnUnix) {
-        	
-			XBuild(solution, settings => {
-				settings
-				.SetConfiguration(configuration)
-				.WithProperty("NoWarn", "1591") // ignore missing XML doc warnings
-				.WithProperty("TreatWarningsAsErrors", treatWarningsAsErrors.ToString())
-				.SetVerbosity(Verbosity.Minimal);
+    	// UWP (project.json) needs to be restored before it will build.
+		RestorePackages(solution);
 
-				var msBuildLogger = GetMSBuildLoggerArguments();
+    	MSBuild(solution, settings => {
+			settings
+			.SetConfiguration(configuration)
+			.WithProperty("NoWarn", "1591") // ignore missing XML doc warnings
+			.WithProperty("TreatWarningsAsErrors", treatWarningsAsErrors.ToString())
+			.SetVerbosity(Verbosity.Minimal)
+			.SetNodeReuse(false);
 
-				if(!string.IsNullOrEmpty(msBuildLogger)) 
-				{
-					settings.ArgumentCustomization = arguments => arguments.Append(string.Format(" /logger:{0}", msBuildLogger));
-				}
-			});
-        }
-        else {
+			if(!string.IsNullOrWhiteSpace(platform)) 
+			{
+				settings.WithProperty("PlatForm", platform);
+			}
 
-        	// UWP (project.json) needs to be restored before it will build.
-  			RestorePackages(solution);
+			settings.ToolVersion = MSBuildToolVersion.VS2015;
+		
+			var msBuildLogger = GetMSBuildLoggerArguments();
+		
+			if(!string.IsNullOrEmpty(msBuildLogger)) 
+			{
+				Information("Using custom MSBuild logger: {0}", msBuildLogger);
+				settings.ArgumentCustomization = arguments =>
+				arguments.Append(string.Format("/logger:{0}", msBuildLogger));
+			}
+		});
 
-        	MSBuild(solution, settings => {
-				settings
-				.SetConfiguration(configuration)
-				.WithProperty("NoWarn", "1591") // ignore missing XML doc warnings
-				.WithProperty("TreatWarningsAsErrors", treatWarningsAsErrors.ToString())
-				.SetVerbosity(Verbosity.Minimal)
-				.SetNodeReuse(false);
-
-				settings.ToolVersion = MSBuildToolVersion.VS2015;
-			
-				var msBuildLogger = GetMSBuildLoggerArguments();
-			
-				if(!string.IsNullOrEmpty(msBuildLogger)) 
-				{
-					Information("Using custom MSBuild logger: {0}", msBuildLogger);
-					settings.ArgumentCustomization = arguments =>
-					arguments.Append(string.Format("/logger:{0}", msBuildLogger));
-				}
-			});
-
+		if(isRunningOnWindows) {
 			// seems like it doesn't work for ios
 			using(Block("SourceLink")) 
 			{
 			    SourceLink(solution);
 			};
-        }
 
-		
+		}
     };		
 
 };
@@ -452,7 +442,12 @@ Setup((context) =>
              Information("Not running on TeamCity");
         }
 
-         CleanDirectories(artifactDirectory);
+        DeleteFiles("../src/**/*.tmp");
+		DeleteFiles("../src/**/*.tmp.*");
+
+		CleanDirectories(GetDirectories("../src/**/obj"));
+		CleanDirectories(GetDirectories("../src/**/bin"));		
+		CleanDirectory(Directory(artifactDirectory));	
 });
 
 Teardown((context) =>
@@ -470,7 +465,7 @@ Task("Build")
     .IsDependentOn("UpdateAssemblyInfo")
     .Does (() =>
 {
-    build(buildSolution, "Release");
+    build(buildSolution, "Release", "");
 })
 .OnError(exception => {
 	WriteErrorLog("Build failed", "Build", exception);
@@ -547,7 +542,7 @@ Task("RunUnitTests")
 	};
 });
 
-
+var iosTestDirectryPath = config.Value<string>("iosTestAppDirectoryPath");
 Task("RunSimulatorUnitTests")
    .IsDependentOn("RestorePackages")
    .IsDependentOn("Build")
@@ -560,6 +555,8 @@ Task("RunSimulatorUnitTests")
 		Information("Running iOS Simulator Unit Tests for {0}", project);
 		using(BuildBlock("RuniOSSimulatorUnitTests")) 
 		{
+			build(buildSolution, "Release", "iPhoneSimulator");
+			MoveDirectory(iosTestDirectryPath, artifactDirectory + "bin");
 		    unitTestiOSApp(
 		        testAppBundleId,
 		        config.Value<string>("iosTestAppPath")

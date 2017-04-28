@@ -46,7 +46,7 @@
 	<key>CFBundleIdentifier</key>
 	<string>com.bluechilli.chillisource.mobile.tests</string>
 	<key>CFBundleDisplayName</key>
-	<string>ChilliSource.Tests</string>
+	<string>ChilliSource.Mobile.Tests</string>
 	<key>CFBundleShortVersionString</key>
 	<string></string>
 </dict>

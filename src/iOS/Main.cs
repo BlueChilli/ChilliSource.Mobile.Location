@@ -33,7 +33,7 @@ See the LICENSE file in the project root for more information.
 
 using UIKit;
 
-namespace ChilliSource.Mobile.Location.Tests
+namespace ChilliSource.Mobile.Tests
 {
 	public class Application
     {
