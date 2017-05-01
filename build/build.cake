@@ -475,7 +475,7 @@ Task("Build")
 Task("AddLicense")
 	.WithCriteria(() => shouldAddLicenseHeader)
 	.Does(() =>{
-		var command = isRunningOnWindows ? "sh" : "./license-header-cmd.sh";
+		var command = "sh";
 		var settings = isRunningOnWindows ? new ProcessSettings { Arguments = "-c \"./license-header-cmd.sh\"", RedirectStandardError = true, RedirectStandardOutput = true } : new ProcessSettings { RedirectStandardError = true, RedirectStandardOutput = true };
 		var process  = StartAndReturnProcess(command, settings);		
 		process.WaitForExit();
