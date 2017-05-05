@@ -6,7 +6,7 @@ This project is part of the ChilliSource framework developed by [BlueChilli](htt
 
 ### Summary ###
 
-ChilliSource.Mobile.Location is a collection of helpers, extensions, and abstractions for location tracking based on Google maps and directions.
+ChilliSource.Mobile.Location is a collection of helpers, extensions, and abstractions for location tracking based on Google maps and directions. 
 
 ### Installation ###
 
