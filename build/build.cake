@@ -588,6 +588,8 @@ Task("Package")
     .IsDependentOn("RunSimulatorUnitTests")
     .Does (() =>
 {
+	Information("isLocal:{0} - isPullRequest:{1} - isRepository:{2}", local, isPullRequest, isRepository);
+
 	using(BuildBlock("Package")) 
 	{
 		foreach(var package in packageWhitelist)
@@ -606,7 +608,6 @@ Task("Package")
 	WriteErrorLog("Generating packages failed", "Package", exception);
 });
 
-Information("isLocal:{0} - isPullRequest:{1} - isRepository:{2}", local, isPullRequest, isRepository);
 
 Task("PublishPackages")
     .IsDependentOn("Package")
