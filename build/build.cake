@@ -606,11 +606,9 @@ Task("Package")
 	WriteErrorLog("Generating packages failed", "Package", exception);
 });
 
+Information("isLocal:{0} - isPullRequest:{1} - isRepository:{2}", local, isPullRequest, isRepository);
 
 Task("PublishPackages")
-	.IsDependentOn("Build")
-    .IsDependentOn("RunUnitTests")
-    .IsDependentOn("RunSimulatorUnitTests")
     .IsDependentOn("Package")
     .WithCriteria(() => !local)
     .WithCriteria(() => !isPullRequest)
@@ -677,9 +675,6 @@ Task("PublishPackages")
 });
 
 Task("CreateRelease")
-    .IsDependentOn("Build")
-    .IsDependentOn("RunUnitTests")
-    .IsDependentOn("RunSimulatorUnitTests")
     .IsDependentOn("Package")
     .WithCriteria(() => !local)
     .WithCriteria(() => !isPullRequest)
@@ -717,9 +712,6 @@ Task("CreateRelease")
 });
 
 Task("PublishRelease")
-   .IsDependentOn("Build")
-    .IsDependentOn("RunUnitTests")
-    .IsDependentOn("RunSimulatorUnitTests")
     .IsDependentOn("Package")
     .WithCriteria(() => !local)
     .WithCriteria(() => !isPullRequest)
