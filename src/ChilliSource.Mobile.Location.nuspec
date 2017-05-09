@@ -22,11 +22,6 @@
         <dependency id="Newtonsoft.Json" version="9.0.1" />
         <dependency id="Humanizer.Core" version="2.1.0" />
       </group>
-      <group targetFramework="MonoAndroid403">
-        <dependency id="Xamarin.GooglePlayServices.Base" version="42.1001.0" />
-    	<dependency id="Xamarin.GooglePlayServices.Basement" version="42.1001.0" />
-        <dependency id="Xamarin.GooglePlayServices.Maps" version="42.1001.0" />                
-      </group>
     </dependencies>
   </metadata>
   <files>
