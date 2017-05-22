@@ -56,10 +56,7 @@
       <HintPath>..\packages\Serilog.Sinks.Console.2.1.0\lib\netstandard1.3\Serilog.Sinks.Console.dll</HintPath>
     </Reference>
     <Reference Include="ChilliSource.Mobile.Core">
-      <HintPath>..\packages\ChilliSource.Mobile.Core.1.0.0\lib\MonoAndroid403\ChilliSource.Mobile.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="ChilliSource.Mobile.Core.Droid">
-      <HintPath>..\packages\ChilliSource.Mobile.Core.1.0.0\lib\MonoAndroid403\ChilliSource.Mobile.Core.Droid.dll</HintPath>
+      <HintPath>..\packages\ChilliSource.Mobile.Core.1.0.1\lib\netstandard1.6\ChilliSource.Mobile.Core.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
