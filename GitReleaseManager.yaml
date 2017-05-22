@@ -11,13 +11,17 @@ export:
   regex-text: '### Where to get it(\r\n)*You can .*\)'
   multiline-regex: true
 issue-labels-include:
-- Breaking change
-- Feature
-- Bug
-- Improvement
-- Documentation
+- breaking change
+- feature
+- bug
+- improvement
+- documentation
+- xamarin-android
+- xamarin-ios
+- xamarin-forms
+- build
 issue-labels-exclude:
-- Build
+- build
 issue-labels-alias:
     - name:    Documentation
       header:  Documentation
