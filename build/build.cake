@@ -6,10 +6,8 @@ using System.Text.RegularExpressions;
 //////////////////////////////////////////////////////////////////////
 
 #addin "Cake.FileHelpers"
-#addin "Cake.AppleSimulator"
-#addin "Cake.Android.Adb"
 #addin "Cake.Xamarin"
-#addin "nuget:?package=Catel.Core&version=4.5.3"
+#addin nuget:?package=Newtonsoft.Json
 //////////////////////////////////////////////////////////////////////
 // TOOLS
 //////////////////////////////////////////////////////////////////////
@@ -18,8 +16,9 @@ using System.Text.RegularExpressions;
 #tool "GitVersion.CommandLine"
 #tool "GitLink"
 #tool "nuget:?package=xunit.runner.console&version=2.1.0"
+#tool nuget:?package=vswhere
+
 using Cake.Common.Build.TeamCity;
-using Cake.AppleSimulator.UnitTest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -93,6 +92,12 @@ var isTagged = !String.IsNullOrEmpty(branch) && branch.ToUpper().Contains("TAGS"
 var buildConfName = EnvironmentVariable("TEAMCITY_BUILDCONF_NAME"); //teamCity.Environment.Build.BuildConfName
 var buildNumber = GetEnvironmentInteger("BUILD_NUMBER");
 var isReleaseBranch = StringComparer.OrdinalIgnoreCase.Equals("master", buildConfName)|| StringComparer.OrdinalIgnoreCase.Equals("release", buildConfName);
+var isCI = EnvironmentVariable("CI");
+
+if(string.IsNullOrEmpty(isCI)) 
+{
+	isCI = "false";
+}
 
 var shouldAddLicenseHeader = false;
 if(!string.IsNullOrEmpty(EnvironmentVariable("ShouldAddLicenseHeader"))) {
@@ -115,17 +120,13 @@ var copyright = config.Value<string>("copyright");
 var authors = config.Value<JArray>("authors").Values<string>().ToList();
 var iconUrl = config.Value<string>("iconUrl");
 var tags = config.Value<JArray>("tags").Values<string>().ToList();
-var testAppBundleId = config.Value<string>("testAppBundleId");
 
 // Artifacts
 var artifactDirectory = config.Value<string>("artifactDirectory");
 var packageWhitelist = config.Value<JArray>("packageWhiteList").Values<string>();
 
 var buildSolution = config.Value<string>("solutionFile");
-var simulatorRuntimes = config.Value<JArray>("simulatorRuntimes").Values<string>();
-var simulatorDevice = config.Value<string>("simulatorDevice");
 var runUnitTests = config.Value<bool>("runUnitTests");
-var runSimulatorTests = config.Value<bool>("runSimulatorTests");
 
 // Macros
 
@@ -134,204 +135,9 @@ Func<string> GetMSBuildLoggerArguments = () => {
 };
 
 
-Func<List<string>, TestResults> GetTestResultsFromLogs = (logItems) => {
-	var testResults = new TestResults();
-	logItems.Reverse();
-	
-	foreach (var line in logItems)
-    {
-        // Unit for Devices = "Tests run: 0 Passed: 0 Failed: 0 Skipped: 0"
-        // NUnit for Devices = "Tests run: 2 Passed: 1 Inconclusive: 0 Failed: 1 Ignored: 1
-        if (line.Contains("Tests run:"))
-        {
-            var testLine = line.Substring(line.IndexOf("Tests run:", StringComparison.Ordinal));
-            var testArray = Regex.Split(testLine, @"\D+").Where(s => s != string.Empty).ToArray();
-            testResults.Run = int.Parse(testArray[0]);
-            testResults.Passed = int.Parse(testArray[1]);
-            if (testArray.Length == 4)
-            {
-                testResults.Failed = int.Parse(testArray[2]);
-                testResults.Skipped = int.Parse(testArray[3]);
-            }
-            else
-            {
-                testResults.Inconclusive = int.Parse(testArray[2]);
-                testResults.Failed = int.Parse(testArray[3]);
-                testResults.Skipped = int.Parse(testArray[4]);
-            }
-            break;
-        }
-    }
-
-	return testResults;
-};
-
-
 Action Abort = () => { throw new Exception("A non-recoverable fatal error occurred."); };
 Action<string> TestFailuresAbort = testResult => { throw new Exception(testResult); };
 Action NonMacOSAbort = () => { throw new Exception("Running on platforms other macOS is not supported."); };
-
-Action<string, string> unitTestiOSApp = (bundleId, appPath) =>
-{
-    Information("Shutdown");
-    ShutdownAllAppleSimulators();
-
-    var setting = new SimCtlSettings() { ToolPath = FindXCodeTool("simctl") };
-    var simulators = ListAppleSimulators(setting);
-    var device = simulators.First(x => x.Name == simulatorDevice && simulatorRuntimes.Contains(x.Runtime));
-    Information(string.Format("Name={0}, UDID={1}, Runtime={2}, Availability={3}", device.Name, device.UDID,device.Runtime,device.Availability));
-
-    Information("LaunchAppleSimulator");
-    LaunchAppleSimulator(device.UDID);
-    Thread.Sleep(30 * 1000);
-
-    Information("UninstalliOSApplication");
-    UninstalliOSApplication(
-        device.UDID, 
-        bundleId,
-        setting);
-	Thread.Sleep(60 * 1000);
-
-    Information("InstalliOSApplication");
-    InstalliOSApplication(
-        device.UDID,
-        appPath,
-        setting);
-	// Delay to allow simctl install to finish, otherwise you can receive the following error:
-	// The request was denied by service delegate (SBMainWorkspace) for reason: 
-	Thread.Sleep(30 * 1000);
-
-    Information("TestiOSApplication");
-    var testResults = TestiOSApplication(
-        device.UDID, 
-        bundleId,
-        setting);
-    Information("Test Results:");
-    Information(string.Format("Tests Run:{0} Passed:{1} Failed:{2} Skipped:{3} Inconclusive:{4}", 
-					testResults.Run, testResults.Passed, testResults.Failed,testResults.Skipped,testResults.Inconclusive));    
-
-    Information("UninstalliOSApplication");
-    UninstalliOSApplication(
-        device.UDID, 
-        bundleId,
-        setting);
-
-    Information("Shutdown");
-    ShutdownAllAppleSimulators();
-
-    if (testResults.Run > 0 && testResults.Failed > 0) 
-    {
-		TestFailuresAbort(string.Format("iOS unit tests failed: {0}", testResults.Failed));
-    }
-};
-
-Action<string, string> unitTestAndroidApp = (packageId, projectFile) =>
-{
-	var androidHome = EnvironmentVariable("ANDROID_HOME");
-
-	if(string.IsNullOrEmpty(androidHome)) 
-	{
-		return;
-	}
-
-	Information("Creating Apk package");
-	var apk = AndroidPackage(projectFile, true, settings => {
-		settings
-		.WithProperty("OutputPath", "../" + artifactDirectory)
-		.WithProperty("NoWarn", "1591") // ignore missing XML doc warnings
-		.WithProperty("TreatWarningsAsErrors", treatWarningsAsErrors.ToString())
-		.SetVerbosity(Verbosity.Minimal);
-	});
-
-	Information(string.Format("apk: {0}", apk));
-	var adbSettings = new AdbToolSettings() {
-		SdkRoot = EnvironmentVariable("ANDROID_HOME")
-	};
-
-	var devices = AdbDevices(adbSettings);
-	var device = devices.FirstOrDefault(m => !string.IsNullOrWhiteSpace(m.Model));
-
-	if(device != null) 
-	{
-		adbSettings = new AdbToolSettings() {
-			SdkRoot = EnvironmentVariable("ANDROID_HOME"),
-			Serial = device.Serial
-		};
-
-		Information(string.Format("Serial={0}, Model={1}, Product={2}, Device={3}", device.Serial, device.Model, device.Product,device.Device));
-		Information(string.Format("Installing {0}", packageId));
-		AdbInstall(artifactDirectory + packageId + "-Signed.apk", adbSettings);
-		Thread.Sleep(60 * 1000);
-	
-		Information("Conducting Tests");
-		AdbShell(string.Format("am start -n {0}/{1} -c android.intent.category.LAUNCHER", packageId , "com.xunit.runneractivity"), adbSettings);
-	
-		var logs = AdbLogcat(new AdbLogcatOptions() {
-		
-		}, "mono-stdout:I *:S", adbSettings);
-
-		Thread.Sleep(60 * 1000);
-	
-		var testResults = GetTestResultsFromLogs(logs);
-		Information("Test Results:");
-		Information(string.Format("Tests Run:{0} Passed:{1} Failed:{2} Skipped:{3} Inconclusive:{4}", 
-						testResults.Run, testResults.Passed, testResults.Failed,testResults.Skipped,testResults.Inconclusive));    
-		
-		Information(string.Format("Uninstalling {0}", packageId));
-		AdbUninstall(packageId, false, adbSettings);
-
-		
-	   if (testResults.Run > 0 && testResults.Failed > 0) 
-	   {
-			TestFailuresAbort(string.Format("Android unit tests failed: {0}", testResults.Failed));
-	   }
-	}	
-
-
-   
-
-};
-
-Action<string> RestorePackages = (solution) =>
-{
-    NuGetRestore(solution);
-};
-
-
-Action<string, string> Package = (nuspec, basePath) =>
-{
-    CreateDirectory(artifactDirectory);
-
-    Information("Packaging {0} using {1} as the BasePath.", nuspec, basePath);
-
-    NuGetPack(nuspec, new NuGetPackSettings {
-        Authors                  = authors,
-        Owners                   = authors,
-        ProjectUrl               = new Uri(githubUrl),
-        IconUrl                  = new Uri(iconUrl),
-        LicenseUrl               = new Uri(licenceUrl),
-        Copyright                = copyright,
-        RequireLicenseAcceptance = false,
-
-        Version                  = nugetVersion,
-        Tags                     = tags,
-        ReleaseNotes             = new [] { string.Format("{0}/releases", githubUrl) },
-
-        Symbols                  = false,
-        Verbosity                = NuGetVerbosity.Detailed,
-        OutputDirectory          = artifactDirectory,
-        BasePath                 = basePath
-    });
-};
-
-Action<string> SourceLink = (solutionFileName) =>
-{
-    GitLink("./", new GitLinkSettings() {
-        RepositoryUrl = githubUrl,
-        SolutionFileName = solutionFileName,
-        ErrorsAsWarnings = true
-    });
-};
 
 Action<string, string, Exception> WriteErrorLog = (message, identity, ex) => 
 {
@@ -373,18 +179,38 @@ Action<string,string> build = (solution, configuration) =>
     Information("Building {0}", solution);
 	using(BuildBlock("Build")) 
 	{			
-    	// UWP (project.json) needs to be restored before it will build.
-		RestorePackages(solution);
+  		FilePath msBuildPath = VSWhereLatest().CombineWithFilePath("./MSBuild/15.0/Bin/MSBuild.exe");
 
     	MSBuild(solution, settings => {
 			settings
-			.SetConfiguration(configuration)
+			.SetConfiguration(configuration);
+
+			settings.ToolPath = msBuildPath;
+
+			if(isRunningOnUnix) 
+			{
+				settings.WithTarget("restore");
+			}
+			else 
+			{
+				settings.WithTarget("restore;pack");
+			}
+
+			settings
+			.WithProperty("SourceLinkEnabled",  isCI)
+			.WithProperty("PackageOutputPath",  MakeAbsolute(Directory(artifactDirectory)).ToString())
 			.WithProperty("NoWarn", "1591") // ignore missing XML doc warnings
 			.WithProperty("TreatWarningsAsErrors", treatWarningsAsErrors.ToString())
+		    .WithProperty("Version", nugetVersion.ToString())
+		    .WithProperty("Authors",  "\"" + string.Join(" ", authors) + "\"")
+		    .WithProperty("Copyright",  "\"" + copyright + "\"")
+		    .WithProperty("PackageProjectUrl",  "\"" + githubUrl + "\"")
+		    .WithProperty("PackageIconUrl",  "\"" + iconUrl + "\"")
+		    .WithProperty("PackageLicenseUrl",  "\"" + licenceUrl + "\"")
+		    .WithProperty("PackageTags",  "\"" + string.Join(" ", tags) + "\"")
+		    .WithProperty("PackageReleaseNotes",  "\"" +  string.Format("{0}/releases", githubUrl) + "\"")
 			.SetVerbosity(Verbosity.Minimal)
 			.SetNodeReuse(false);
-
-			settings.ToolVersion = MSBuildToolVersion.VS2015;
 		
 			var msBuildLogger = GetMSBuildLoggerArguments();
 		
@@ -395,15 +221,6 @@ Action<string,string> build = (solution, configuration) =>
 				arguments.Append(string.Format("/logger:{0}", msBuildLogger));
 			}
 		});
-
-		if(isRunningOnWindows) 
-		{
-			// seems like it doesn't work for ios
-			using(Block("SourceLink")) 
-			{
-			    SourceLink(solution);
-			};
-		}		
     };		
 
 };
@@ -448,8 +265,6 @@ Teardown((context) =>
 
 Task("Build")
 	.IsDependentOn("AddLicense")
-    .IsDependentOn("RestorePackages")
-    .IsDependentOn("UpdateAssemblyInfo")
     .Does (() =>
 {
     build(buildSolution, "Release");
@@ -476,44 +291,8 @@ Task("AddLicense")
 	});
 
 
-Task("UpdateAssemblyInfo")
-    .Does (() =>
-{
-    var file = "../src/CommonAssemblyInfo.cs";
-
-	using(BuildBlock("UpdateAssemblyInfo")) 
-	{
-		CreateAssemblyInfo(file, new AssemblyInfoSettings {
-			Product = productName,
-			Version = majorMinorPatch,
-			FileVersion = majorMinorPatch,
-			InformationalVersion = informationalVersion,
-			Copyright = copyright
-		});
-	};
-   
-})
-.OnError(exception => {
-	WriteErrorLog("updating assembly info failed", "UpdateAssemblyInfo", exception);
-});
-
-Task("RestorePackages")
-.Does (() =>
-{
-    Information("Restoring Packages for {0}", buildSolution);
-	using(BuildBlock("RestorePackages")) 
-	{
-	    RestorePackages(buildSolution);
-	};
-})
-.OnError(exception => {
-	WriteErrorLog("restoring packages failed", "RestorePackages", exception);
-});
-
-
 var testProjectDll = config.Value<string>("testProjectDll");
 Task("RunUnitTests")
-    .IsDependentOn("RestorePackages")
     .IsDependentOn("Build")
     .WithCriteria(() => runUnitTests)
     .Does(() =>
@@ -529,74 +308,8 @@ Task("RunUnitTests")
 	};
 });
 
-
-Task("RunSimulatorUnitTests")
-   .IsDependentOn("RestorePackages")
-   .IsDependentOn("Build")
-   .IsDependentOn("RunUnitTests")
-   .WithCriteria(() => runSimulatorTests)
-  .Does (() =>
-{
-	// this should be running on MacOS
-	if(isRunningOnUnix) {
-		Information("Running iOS Simulator Unit Tests for {0}", project);
-		using(BuildBlock("RuniOSSimulatorUnitTests")) 
-		{
-		    unitTestiOSApp(
-		        testAppBundleId,
-		        config.Value<string>("iosTestAppPath")
-		    );
-		}
-	}
-
-	Information("Running Android Emulator Unit Tests for {0}", project);
-	var projectFile = config.Value<string>("androidTestAppPath");
-
-	
-	using(BuildBlock("RunAndroidEmulatorUnitTests")) 
-	{
-		unitTestAndroidApp(
-			testAppBundleId,
-			projectFile
-		);
-	}
-})
-.OnError(exception => {
-	WriteErrorLog("simulator " + exception.Message, "RunSimulatorUnitTests", exception);
-});
-
-var nuspecPath = config.Value<string>("nuspecRootPath");
-
-Task("Package")
-    .IsDependentOn("Build")
-    .IsDependentOn("RunUnitTests")
-    .IsDependentOn("RunSimulatorUnitTests")
-    .Does (() =>
-{
-	using(BuildBlock("Package")) 
-	{
-		foreach(var package in packageWhitelist)
-		{
-			// only push the package which was created during this build run.
-			var packagePath = string.Format("../src/{0}.nuspec", package);
-
-			// Push the package.
-			Package(packagePath, nuspecPath);
-		}
-	};
-
-    
-})
-.OnError(exception => {
-	WriteErrorLog("Generating packages failed", "Package", exception);
-});
-
-
 Task("PublishPackages")
-	.IsDependentOn("Build")
     .IsDependentOn("RunUnitTests")
-    .IsDependentOn("RunSimulatorUnitTests")
-    .IsDependentOn("Package")
     .WithCriteria(() => !local)
     .WithCriteria(() => !isPullRequest)
     .WithCriteria(() => isRepository)
@@ -662,10 +375,7 @@ Task("PublishPackages")
 });
 
 Task("CreateRelease")
-    .IsDependentOn("Build")
     .IsDependentOn("RunUnitTests")
-    .IsDependentOn("RunSimulatorUnitTests")
-    .IsDependentOn("Package")
     .WithCriteria(() => !local)
     .WithCriteria(() => !isPullRequest)
     .WithCriteria(() => isRepository)
@@ -702,10 +412,7 @@ Task("CreateRelease")
 });
 
 Task("PublishRelease")
-   .IsDependentOn("Build")
     .IsDependentOn("RunUnitTests")
-    .IsDependentOn("RunSimulatorUnitTests")
-    .IsDependentOn("Package")
     .WithCriteria(() => !local)
     .WithCriteria(() => !isPullRequest)
     .WithCriteria(() => isRepository)

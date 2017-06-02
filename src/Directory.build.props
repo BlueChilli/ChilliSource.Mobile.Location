@@ -1,0 +1,24 @@
+<Project>
+  <PropertyGroup>
+    <Description>Logging Library for ChilliSource.Mobile framework</Description>
+    <RepositoryUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>http://www.reactiveui.net</PackageProjectUrl>
+    <PackageIconUrl>https://i.imgur.com/7WDbqSy.png</PackageIconUrl>
+    <PackageReleaseNotes>https://github.com/reactiveui/reactiveui/releases</PackageReleaseNotes>
+    <SourceLinkUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging</SourceLinkUrl>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <GenerateDocumentationFile Condition=" '$(Configuration)' == 'Release' ">true</GenerateDocumentationFile>
+    <Platform>AnyCPU</Platform>
+    <DebugType>full</DebugType>
+    <IsTestProject>$(MSBuildProjectName.Contains('Tests'))</IsTestProject>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="MSBuild.Sdk.Extras" Version="1.0.2" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' != 'true' and '$(SourceLinkEnabled)' != 'false'">
+    <PackageReference Include="SourceLink.Create.CommandLine" Version="2.1.1" PrivateAssets="All" /> 
+  </ItemGroup>
+</Project>

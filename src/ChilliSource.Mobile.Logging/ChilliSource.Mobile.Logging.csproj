@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard1.6;Xamarin.iOS10;MonoAndroid60</TargetFrameworks>
+    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
+    <PackageId>ChilliSource.Mobile.Logging</PackageId>
+    <Product>Blue Chilli Technology</Product>
+    <Description>Logging Library for ChilliSource.Mobile framework</Description>
+    <RepositoryUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging/blob/master/LICENSE</PackageLicenseUrl>
+    <Company>Blue Chilli Technology</Company>
+    <Authors>Blue Chilli Technology</Authors>
+    <SourceLinkUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging/</SourceLinkUrl>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|netstandard1.6|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard1.6\ChilliSource.Mobile.Logging.xml</DocumentationFile>
+    <NoWarn></NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Xamarin.iOS10|AnyCPU'">
+    <DocumentationFile>bin\Release\Xamarin.iOS10\ChilliSource.Mobile.Logging.xml</DocumentationFile>
+    <NoWarn></NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|MonoAndroid60|AnyCPU'">
+    <DocumentationFile>bin\Release\MonoAndroid60\ChilliSource.Mobile.Logging.xml</DocumentationFile>
+    <NoWarn></NoWarn>
+  </PropertyGroup>
+
+  
+  <ItemGroup>
+    <Compile Remove="Sinks\Raygun\**\*.cs" />
+    <None Include="Sinks\Raygun\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'Xamarin.iOS10'">
+    <Compile Include="Sinks\Raygun\**\*.cs" />
+    <PackageReference Include="Mindscape.Raygun4Net" Version="5.4.1" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'MonoAndroid60'">
+    <Compile Include="Sinks\Raygun\**\*.cs" />
+    <PackageReference Include="Mindscape.Raygun4Net" Version="5.4.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ChilliSource.Mobile.Core" Version="1.0.1" />
+    <PackageReference Include="Serilog" Version="2.4.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="2.1.0" />
+  </ItemGroup>
+  
+
+  <Import Project="$(MSBuildSDKExtrasTargets)" Condition="Exists('$(MSBuildSDKExtrasTargets)')" />
+</Project>

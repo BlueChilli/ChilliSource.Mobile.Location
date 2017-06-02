@@ -23,6 +23,6 @@ issue-labels-include:
 issue-labels-exclude:
 - build
 issue-labels-alias:
-    - name:    Documentation
+    - name:    documentation
       header:  Documentation
       plural:  Documentation

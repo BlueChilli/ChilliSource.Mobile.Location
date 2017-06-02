@@ -17,6 +17,7 @@ namespace ChilliSource.Mobile.Logging
 
 	/// <summary>
 	/// Provides <see cref="Core.ILogger"/> extensions for handling error, warnining, information, and debugging data logging.
+	/// </summary>
 	public static class ILoggerExtensions
     {
 #pragma warning disable 1591
