@@ -3,9 +3,6 @@
     <Description>Logging Library for ChilliSource.Mobile framework</Description>
     <RepositoryUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging</RepositoryUrl>
     <PackageLicenseUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageProjectUrl>http://www.reactiveui.net</PackageProjectUrl>
-    <PackageIconUrl>https://i.imgur.com/7WDbqSy.png</PackageIconUrl>
-    <PackageReleaseNotes>https://github.com/reactiveui/reactiveui/releases</PackageReleaseNotes>
     <SourceLinkUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging</SourceLinkUrl>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <GenerateDocumentationFile Condition=" '$(Configuration)' == 'Release' ">true</GenerateDocumentationFile>
