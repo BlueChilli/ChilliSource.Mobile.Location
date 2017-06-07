@@ -10,7 +10,7 @@ This library provides a [Raygun](https://raygun.com/platform/crash-reporting) lo
 
 ## Usage ##
 
-**Initialization**
+### Initialization ###
 
 You need to first create a ```LoggerConfiguration``` instance and specify the type of logging sink that receives the logged data. Currently ```ChilliSource.Mobile.Logging``` only provides a [Raygun](https://raygun.com/platform/crash-reporting) sink, however you can add additional sinks if you wish.
 
@@ -26,7 +26,7 @@ Then create the logger from the configuration:
 ILogger logger = config.BuildLogger();
 ```
 
-**Logging**
+### Logging ###
 
 You can now use the logger to capture errors, warnings, information, and debugging data:
 
@@ -37,7 +37,7 @@ logger?.Information(message);
 logger?.Debug(message);
 ```
 
-**Logging within ChilliSource.Mobile**
+### Logging within ChilliSource.Mobile ###
 
 The ```ChilliSource.Mobile``` frameworks perform their own logging using the ```ILogger``` interface (available in [ChilliSource.Mobile.Core](https://github.com/BlueChilli/ChilliSource.Mobile.Core)). 
 
