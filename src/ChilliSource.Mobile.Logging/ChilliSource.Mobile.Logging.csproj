@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;Xamarin.iOS10;MonoAndroid60</TargetFrameworks>
+    <TargetFrameworks>netstandard1.6;Xamarin.iOS10;MonoAndroid60;net462</TargetFrameworks>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
     <PackageId>ChilliSource.Mobile.Logging</PackageId>    
     <Description>Logging Library for ChilliSource.Mobile framework</Description>
@@ -24,7 +24,10 @@
     <DocumentationFile>bin\Release\MonoAndroid60\ChilliSource.Mobile.Logging.xml</DocumentationFile>
     <NoWarn></NoWarn>
   </PropertyGroup>
-
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|net462|AnyCPU'">
+    <DocumentationFile>bin\Release\net462\ChilliSource.Mobile.Logging.xml</DocumentationFile>
+    <NoWarn></NoWarn>
+  </PropertyGroup>
   
   <ItemGroup>
     <Compile Remove="Sinks\Raygun\**\*.cs" />
