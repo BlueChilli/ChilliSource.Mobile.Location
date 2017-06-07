@@ -3,13 +3,12 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard1.6;Xamarin.iOS10;MonoAndroid60</TargetFrameworks>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-    <PackageId>ChilliSource.Mobile.Logging</PackageId>
-    <Product>Blue Chilli Technology</Product>
+    <PackageId>ChilliSource.Mobile.Logging</PackageId>    
     <Description>Logging Library for ChilliSource.Mobile framework</Description>
     <RepositoryUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging</RepositoryUrl>
     <PackageLicenseUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging/blob/master/LICENSE</PackageLicenseUrl>
-    <Company>Blue Chilli Technology</Company>
-    <Authors>Blue Chilli Technology</Authors>
+    <Company>Blue Chilli Technology Pty Ltd</Company>
+    <Authors>Blue Chilli Technology Pty Ltd</Authors>
     <SourceLinkUrl>https://github.com/BlueChilli/ChilliSource.Mobile.Logging/</SourceLinkUrl>
   </PropertyGroup>
 
