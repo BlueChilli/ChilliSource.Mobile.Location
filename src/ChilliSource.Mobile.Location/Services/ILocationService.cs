@@ -1,0 +1,119 @@
+#region License
+
+/*
+Licensed to Blue Chilli Technology Pty Ltd and the contributors under the MIT License (the "License").
+You may not use this file except in compliance with the License.
+See the LICENSE file in the project root for more information.
+*/
+
+#endregion
+
+// ***********************************************************************
+// Assembly         : XLabs.Platform
+// Author           : XLabs Team
+// Created          : 12-27-2015
+// 
+// Last Modified By : XLabs Team
+// Last Modified On : 01-04-2016
+// ***********************************************************************
+// <copyright file="IGeolocator.cs" company="XLabs Team">
+//     Copyright (c) XLabs Team. All rights reserved.
+// </copyright>
+// <summary>
+//       This project is licensed under the Apache 2.0 license
+//       https://github.com/XLabs/Xamarin-Forms-Labs/blob/master/LICENSE
+//       
+//       XLabs is a open source project that aims to provide a powerfull and cross 
+//       platform set of controls tailored to work with Xamarin Forms.
+// </summary>
+// ***********************************************************************
+// 
+
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace ChilliSource.Mobile.Location
+{
+	/// <summary>
+	/// Provides functionality for monitoring device location events
+	/// </summary>
+	public interface ILocationService
+	{
+		/// <summary>
+		/// Gets or sets the desired accuracy.
+		/// </summary>
+		/// <value>The desired accuracy.</value>
+		double DesiredAccuracy { get; set; }
+
+		/// <summary>
+		/// Gets a value indicating whether the app is listening for location events.
+		/// </summary>
+		/// <value><c>true</c> if this instance is listening; otherwise, <c>false</c>.</value>
+		bool IsListening { get; }
+
+		/// <summary>
+		/// Gets a value indicating whether the device can provide heading information
+		/// </summary>
+		/// <value><c>true</c> if [supports heading]; otherwise, <c>false</c>.</value>
+		bool SupportsHeading { get; }
+
+		/// <summary>
+		/// Gets a value indicating whether the device can provide location info.
+		/// </summary>
+		/// <value><c>true</c> if this instance is geolocation available; otherwise, <c>false</c>.</value>
+		bool IsGeolocationAvailable { get; }
+
+		/// <summary>
+		/// Gets a value indicating whether the app has permission to receive location info
+		/// </summary>
+		/// <value><c>true</c> if this instance is geolocation enabled; otherwise, <c>false</c>.</value>
+		bool IsGeolocationEnabled { get; }
+
+		event EventHandler<PositionErrorEventArgs> ErrorOccured;
+
+		event EventHandler<PositionEventArgs> PositionChanged;
+
+		void Initialize(LocationAuthorizationType authorizationType, bool allowBackgroundLocationUpdates);
+
+		void Dispose();
+
+		/// <summary>
+		/// Start listening for location changes
+		/// </summary>
+		/// <param name="minTime">Minimum interval in milliseconds</param>
+		/// <param name="minDistance">Minimum distance in meters</param>
+		/// <param name="includeHeading">Include heading information</param>
+		void StartListening(uint minTime, double minDistance, bool includeHeading = false);
+
+		/// <summary>
+		/// Stop listening for location changes
+		/// </summary>
+		void StopListening();
+
+		/// <summary>
+		/// Returns the most recently captured position info of the device
+		/// </summary>
+		/// <returns>The position async.</returns>
+		/// <param name="timeout">Timeout.</param>
+		/// <param name="includeHeading">If set to <c>true</c> include heading.</param>
+		Task<Position> GetPositionAsync(int timeout, bool includeHeading = false);
+
+		/// <summary>
+		/// Returns the most recently captured position info of the device
+		/// </summary>
+		/// <returns>The position async.</returns>
+		/// <param name="cancelToken">Cancel token.</param>
+		/// <param name="includeHeading">If set to <c>true</c> include heading.</param>
+		Task<Position> GetPositionAsync(CancellationToken cancelToken, bool includeHeading = false);
+
+		/// <summary>
+		/// Returns the most recently captured position info of the device
+		/// </summary>
+		/// <returns>The position async.</returns>
+		/// <param name="timeout">Timeout.</param>
+		/// <param name="cancelToken">Cancel token.</param>
+		/// <param name="includeHeading">If set to <c>true</c> include heading.</param>
+		Task<Position> GetPositionAsync(int timeout, CancellationToken cancelToken, bool includeHeading = false);
+	}
+}

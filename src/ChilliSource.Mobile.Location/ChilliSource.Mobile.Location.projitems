@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>{958A7114-4661-42A7-97C4-89E0A8BC8069}</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>ChilliSource.Mobile.Location</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Google\Common\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Google\Places\Models\Autocomplete\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Services\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Helpers\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Effects\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Entities\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Enums\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Roads\RoadsUrlFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\Autocomplete\MatchedSubstring.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\Autocomplete\Prediction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\Autocomplete\Term.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\Details\AddressComponent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\Details\Geometry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\Details\PlaceDetail.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Services\ILocationService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers\MapHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Effects\NonInteractiveMapEffect.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\DirectionsRequest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\DirectionsService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\DirectionsResponse.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Common\GoogleCoordinate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\RouteLeg.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\Route.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\TextValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\CachingProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\Autocomplete\AutocompleteRequest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\Details\DetailsResponse.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\Models\Autocomplete\PlaceResponse.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\PlacesService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Places\PlacesUrlFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Roads\RoadsService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Roads\Models\RoadsResponse.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Roads\Models\SnappedPoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Helpers\LocationHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\TravelMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\UnitType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\TrafficModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Common\GoogleApiResponseStatus.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Enums\GeolocationErrorType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\PositionErrorEventArgs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\GeolocationException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\Position.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\PositionEventArgs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\Waypoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Enums\LocationAuthorizationType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\DirectionsUrlFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\Step.cs" />
+  </ItemGroup>
+</Project>
