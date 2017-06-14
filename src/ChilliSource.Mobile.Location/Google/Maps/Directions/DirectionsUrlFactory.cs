@@ -31,9 +31,9 @@ namespace ChilliSource.Mobile.Location.Google.Maps.Directions
         /// <returns></returns>
 		public static OperationResult<string> BuildDirectionsUrl(DirectionsRequest request, string apiKey)
 		{
-            if (request == null || request.OriginCoordinates == null)
+            if (request?.OriginCoordinates == null && request?.OriginPlaceId == null)
             {
-                return OperationResult<string>.AsFailure("Invalid request parameter specified. Please make sure to specify the OriginCoordinates");
+                return OperationResult<string>.AsFailure("Invalid request parameter specified. Please make sure to specify the OriginCoordinates or OriginPlaceId");
             }
 
             if (string.IsNullOrEmpty(apiKey))

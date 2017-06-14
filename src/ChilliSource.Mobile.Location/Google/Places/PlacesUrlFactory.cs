@@ -19,8 +19,9 @@ namespace ChilliSource.Mobile.Location.Google.Places
 	internal class PlacesUrlFactory
 	{
 		private static string _baseURL = "https://maps.googleapis.com/maps/api/place/autocomplete/json?key=";
+	    private static string _baseDetailUrl = "https://maps.googleapis.com/maps/api/place/details/json?key=";
 
-		private readonly string _apiKey;
+        private readonly string _apiKey;
 		private readonly string _language;
 
 		internal PlacesUrlFactory(string apiKey, string language)
@@ -76,7 +77,7 @@ namespace ChilliSource.Mobile.Location.Google.Places
 		public Uri BuildDetailsUrl(string placeId)
 		{
 			var url = new StringBuilder();
-			url.Append($"{_baseURL}{_apiKey}");
+			url.Append($"{_baseDetailUrl}{_apiKey}");
 			url.Append($"&placeid={placeId}");
 
 			if (!string.IsNullOrWhiteSpace(_language))

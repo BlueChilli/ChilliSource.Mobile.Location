@@ -11,6 +11,7 @@ See the LICENSE file in the project root for more information.
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -18,11 +19,11 @@ using ChilliSource.Mobile.Core;
 
 namespace ChilliSource.Mobile.Location.Google.Places
 {
-	/// <summary>
-	/// Provides functionality to query Google's Places Api and retrieve autocomplate places lists
+    /// <summary>
+	/// Provides functionality to query Google's Places Api and retrieve autocomplete places lists
 	/// </summary>
-	public class PlacesService
-	{
+	public class PlacesService : Google.BaseService
+    {
 		private readonly PlacesUrlFactory _urlFactory;		    
 		private readonly CachingProvider _cachingProvider;
 
@@ -62,7 +63,7 @@ namespace ChilliSource.Mobile.Location.Google.Places
         /// <param name="input">Search string</param>
         /// <param name="request">Autocomplete request specifying additional components in the search Url to be generated</param>
         /// </summary>
-        public async Task<OperationResult<PlaceResponse>> AutocompleteAsync(string input, AutocompleteRequest autocomleteRequest)
+        public async Task<OperationResult<PlaceResponse>> AutocompleteAsync(string input, AutocompleteRequest autocomleteRequest = null)
 		{
 			//Get cached results
 			var result = _cachingProvider.GetAutocompleteResult(input);
@@ -72,26 +73,29 @@ namespace ChilliSource.Mobile.Location.Google.Places
                 return OperationResult<PlaceResponse>.AsSuccess(result);
             }
 
-			var searchResult = await SearchAsync(input, new AutocompleteRequest
-			{
-				Region = "au"
-			})
-            .ContinueWith(response =>
-			    {
-                    if (response.Result == null)
-                    {
-                        return OperationResult<PlaceResponse>.AsFailure("Search response result is null");                       
-                    }
-				    return response.Result;
-			    })
-            .ConfigureAwait(false);
+		    OperationResult<PlaceResponse> searchResult;
 
-            if (searchResult.IsSuccessful)
-            {
-                _cachingProvider.StoreAutocompleteResult(input, searchResult.Result);
+		    if (autocomleteRequest != null)
+		    {
+		        searchResult = await SearchAsync(input, autocomleteRequest);
+		    }
+		    else
+		    {
+		        searchResult = await SearchAsync(input, new AutocompleteRequest()
+		        {
+		            Region = "au"
+		        });
+		    }
+
+
+		    if (!searchResult.IsSuccessful)
+		    {
+		        return OperationResult<PlaceResponse>.AsFailure("Search response result is null");
             }
 
-			return searchResult;
+		    _cachingProvider.StoreAutocompleteResult(input, searchResult.Result);
+
+            return searchResult;
 		}
 
 		/// <summary>
@@ -100,29 +104,30 @@ namespace ChilliSource.Mobile.Location.Google.Places
 		/// <param name="request">Autocomplete request specifying additional components in the search Url to be generated</param>
 		/// <returns>Place result with predictions</returns>
 		/// </summary>
-		public Task<OperationResult<PlaceResponse>> SearchAsync(string searchString, AutocompleteRequest request)
+		public async Task<OperationResult<PlaceResponse>> SearchAsync(string searchString, AutocompleteRequest request)
 		{
             if (string.IsNullOrWhiteSpace(searchString))
             {
-                Task.Run(() =>
-                {
-                    return OperationResult<DetailsResponse>.AsFailure("PlaceId cannot be empty");
-                });
+                return OperationResult<PlaceResponse>.AsFailure("PlaceId cannot be empty");
             }
 
 			var url = _urlFactory.BuildSearchUrl(searchString, request);
 
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("Content-Type", "application/json;charset=utf-8");
+                AcceptJsonResponse(client);
 
-				return client.GetStringAsync(url)
-						.ContinueWith(response =>
-                        {
-                            var result = JsonConvert.DeserializeObject<PlaceResponse>(response.Result);
-                            return OperationResult<PlaceResponse>.AsSuccess(result);
-                           });
-			}
+                var response = await client.GetAsync(url).ConfigureAwait(false);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return OperationResult<PlaceResponse>.AsFailure(response.ReasonPhrase);
+                }
+
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var result = JsonConvert.DeserializeObject<PlaceResponse>(content);
+                return OperationResult<PlaceResponse>.AsSuccess(result);
+            }
 		}
 
         /// <summary>
@@ -130,34 +135,37 @@ namespace ChilliSource.Mobile.Location.Google.Places
         /// <param name="prediction">Search prediction</param>
         /// <returns>The place details</returns>
         /// </summary>
-        public Task<OperationResult<DetailsResponse>> GetPlaceDetails(Prediction prediction)
+        public async Task<OperationResult<DetailsResponse>> GetPlaceDetails(Prediction prediction)
 		{
             if (string.IsNullOrWhiteSpace(prediction.PlaceId))
-            {                
-                Task.Run(() =>
-                {
-                    return OperationResult<DetailsResponse>.AsFailure("PlaceId cannot be empty");
-                });                
+            {
+                return OperationResult<DetailsResponse>.AsFailure("PlaceId cannot be empty");
             }
 
 			var url = _urlFactory.BuildDetailsUrl(prediction.PlaceId);
 
 			using (var client = new HttpClient())
 			{
-			    client.DefaultRequestHeaders.Add("Content-Type", "application/json;charset=utf-8");
+			    AcceptJsonResponse(client);
 
-                return client.GetStringAsync(url)
-                        .ContinueWith(response =>
-				            {
-					            var detailsResult = JsonConvert.DeserializeObject<DetailsResponse>(response.Result);
+			    var response = await client.GetAsync(url).ConfigureAwait(false);
 
-					            if (detailsResult.Result.Prediction != null)
-					            {
-						            detailsResult.Result.Prediction = prediction.Description;
-					            }
-					            return OperationResult<DetailsResponse>.AsSuccess(detailsResult);
-				            });
-			}
+			    if (!response.IsSuccessStatusCode)
+			    {
+			        return OperationResult<DetailsResponse>.AsFailure(response.ReasonPhrase);
+			    }
+
+			    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+			    var detailsResult = JsonConvert.DeserializeObject<DetailsResponse>(content);
+
+			    if (detailsResult.Status == GoogleApiResponseStatus.Ok && detailsResult.Result.Prediction != null)
+			    {
+			        detailsResult.Result.Prediction = prediction.Description;
+                }
+
+
+                return OperationResult<DetailsResponse>.AsSuccess(detailsResult);
+            }
 		}
 	}
 }
