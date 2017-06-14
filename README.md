@@ -155,5 +155,3 @@ ChilliSource.Mobile is licensed under the [MIT license](LICENSE).
 ## Feedback and Contact ##
 
 For questions or feedback, please contact [chillisource@bluechilli.com](mailto:chillisource@bluechilli.com).
-
-
