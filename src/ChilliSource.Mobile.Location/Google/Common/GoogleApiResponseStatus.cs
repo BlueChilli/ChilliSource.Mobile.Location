@@ -10,7 +10,7 @@ See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization;
 
-namespace ChilliSource.Mobile.Location
+namespace ChilliSource.Mobile.Location.Google
 {
     /// <summary>
     /// Common Google Api status codes
