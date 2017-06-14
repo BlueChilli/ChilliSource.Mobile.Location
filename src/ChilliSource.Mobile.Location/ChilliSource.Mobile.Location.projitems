@@ -60,5 +60,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Enums\LocationAuthorizationType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\DirectionsUrlFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\Step.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Google\Common\BaseService.cs" />
   </ItemGroup>
 </Project>
