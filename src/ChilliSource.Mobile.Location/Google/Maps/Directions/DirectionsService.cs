@@ -21,7 +21,7 @@ namespace ChilliSource.Mobile.Location.Google.Maps.Directions
     /// <summary>
     ///  Provides functionality to query Google's Directions Api and retrieve directions 
     /// </summary>
-    public class DirectionsService
+    public class DirectionsService : BaseService
 	{
 		private string _apiKey;
 
@@ -43,20 +43,24 @@ namespace ChilliSource.Mobile.Location.Google.Maps.Directions
 		{
 			using (var client = new HttpClient())
 			{
-			    client.DefaultRequestHeaders.Add("Content-Type", "application/json;charset=utf-8");
-
+			    AcceptJsonResponse(client);
                 var result = DirectionsUrlFactory.BuildDirectionsUrl(request, _apiKey);
                 if (result.IsSuccessful)
                 {
                     var fullUrlString = result.Result;
-                    var responseString = await client.GetStringAsync(fullUrlString);
+                    var response = await client.GetAsync(fullUrlString).ConfigureAwait(false);
 
-                    return await ProcessResponse(responseString);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        return OperationResult<DirectionsResponse>.AsFailure(response.ReasonPhrase);
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    return await ProcessResponse(content);
                 }
-                else
-                {
-                    return OperationResult<DirectionsResponse>.AsFailure(result.Exception);
-                }
+
+                return OperationResult<DirectionsResponse>.AsFailure(result.Exception);
 			}
 		}
 

@@ -22,7 +22,7 @@ namespace ChilliSource.Mobile.Location.Google.Maps.Roads
     /// <summary>
     ///  Provides functionality to query Google's Roads Api and retrieve geo points snapped to a road
     /// </summary>
-    public class RoadsService
+    public class RoadsService : BaseService
 	{
 		private string _apiKey;		
 
@@ -41,7 +41,7 @@ namespace ChilliSource.Mobile.Location.Google.Maps.Roads
         /// <param name="shouldInterpolate">Determines whether to return additional points to smoothly follow the geometry of the road</param>
         /// <returns>Response model with the snapped positions</returns>
         /// </summary>
-        public async Task<OperationResult<RoadsResponse>> RequestSnappedLocations(IList<Position> positions, bool shouldInterpolate)
+        public async Task<OperationResult<RoadsResponse>> RequestSnappedLocations(IList<Position> positions, bool shouldInterpolate = false)
 		{
 			if (positions == null || positions.Count == 0)
 			{               
@@ -50,16 +50,22 @@ namespace ChilliSource.Mobile.Location.Google.Maps.Roads
 			
 			using (var client = new HttpClient())
 			{
-			    client.DefaultRequestHeaders.Add("Content-Type", "application/json;charset=utf-8");
-
-
+                AcceptJsonResponse(client);
                 var fullURLString = RoadsUrlFactory.BuildSnapToRoadsUrl(_apiKey, positions, shouldInterpolate);
 
 				try
 				{
-					var responseString = await client.GetStringAsync((fullURLString));
-					return await ProcessResponse(responseString);
-				}
+					var response = await client.GetAsync(fullURLString);
+
+				    if (!response.IsSuccessStatusCode)
+				    {
+				        return OperationResult<RoadsResponse>.AsFailure(response.ReasonPhrase);
+				    }
+
+				    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+				    return await ProcessResponse(content);
+                }
 				catch (Exception ex)
 				{
                    return OperationResult<RoadsResponse>.AsFailure("Error communicating with Google Snap To Roads API: " + ex.Message);					

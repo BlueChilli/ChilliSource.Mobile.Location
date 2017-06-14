@@ -12,6 +12,9 @@ using System;
 using ChilliSource.Mobile.Location.Google.Maps.Directions;
 using Xunit;
 using System.Text;
+using System.Threading.Tasks;
+using ChilliSource.Mobile.Location.Google;
+using ChilliSource.Mobile.Location.Google.Places;
 
 namespace Location.Tests
 {
@@ -21,7 +24,32 @@ namespace Location.Tests
 
 		static readonly string _destinationAddress = "Bennelong Point, Sydney NSW 2000";
 
-		[Fact]
+
+	    private DirectionsService fixture;
+	    private const string GOOGLE_PLACES_API_KEY ="<Put Your Google Places Api Key here>";
+	    public GoogleDirectionsTests()
+	    {
+	        fixture = new DirectionsService(GOOGLE_PLACES_API_KEY);
+	    }
+
+
+	    [Theory(Skip = "Populate the api key above from google and enable this test")]
+	    //[Theory]
+	    [InlineData("ChIJ13R-ET-uEmsRmwozvQ1oFiY", "ChIJCcEZEl2uEmsR0lmLFhmrdnI")]
+        public async Task ShouldBeAbleToGetDirections(string originPlaceId, string destinationPlaceId)
+	    {
+	        var r = await fixture.RequestDirections(new DirectionsRequest()
+	        {
+	            OriginPlaceId = originPlaceId,
+                DestinationPlaceId = destinationPlaceId
+	        });
+
+	        Assert.NotNull(r);
+	        Assert.True(r.IsSuccessful);
+	        Assert.Equal(GoogleApiResponseStatus.Ok, r.Result.Status);
+	    }
+
+        [Fact]
 		public void BuildDirectionsUrl_ShouldReturnURLString_ForValidRequest()
 		{
 			var request = new DirectionsRequest()
@@ -57,5 +85,7 @@ namespace Location.Tests
             Assert.True(result.IsSuccessful);
             Assert.Contains(_destinationAddress, result.Result);
 		}
-	}
+
+	    
+    }
 }
