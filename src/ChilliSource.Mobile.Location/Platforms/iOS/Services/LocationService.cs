@@ -32,6 +32,7 @@ See the LICENSE file in the project root for more information.
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using ChilliSource.Mobile.Core;
 using ChilliSource.Mobile.Location;
 using CoreLocation;
 using Foundation;
@@ -192,6 +193,16 @@ namespace ChilliSource.Mobile.Location
 			_position = null;
 		}
 
+        public void StartListeningForSignificantLocationChanges()
+        {
+            _manager.StartMonitoringSignificantLocationChanges();
+        }
+
+        public void StopListeningForSignificantLocationChanges()
+        {
+            _manager.StopMonitoringSignificantLocationChanges();
+        }
+
 		public Task<Position> GetPositionAsync(int timeout, bool includeHeading = false)
 		{
 			return GetPositionAsync(timeout, CancellationToken.None, includeHeading);
@@ -259,6 +270,22 @@ namespace ChilliSource.Mobile.Location
 			return tcs.Task;
 		}
 
+        public OperationResult<double> GetDistanceFrom(Position referencePosition)
+        {
+			if (referencePosition == null)
+			{
+				return OperationResult<double>.AsFailure("Invalid reference position specified");
+			}
+
+            if (_position == null)
+            {
+                return OperationResult<double>.AsFailure("Current position not available");
+            }
+
+            var currentLocation = new CLLocation(_position.Latitude, _position.Longitude);
+            var referenceLocation = new CLLocation(referencePosition.Latitude, referencePosition.Longitude);
+            return  OperationResult<double>.AsSuccess(referenceLocation.DistanceFrom(currentLocation));
+        }
 
 		#endregion
 
@@ -266,20 +293,20 @@ namespace ChilliSource.Mobile.Location
 
 		private void OnHeadingUpdated(object sender, CLHeadingUpdatedEventArgs e)
 		{
-			if (e.NewHeading.TrueHeading == -1)
+            if (e.NewHeading.TrueHeading.Equals(-1))
 			{
 				return;
 			}
 
-			var p = (_position == null) ? new Position() : new Position(_position);
+            var newPosition = (_position == null) ? new Position() : new Position(_position);
 
-			p.Heading = e.NewHeading.TrueHeading;
-			p.MagneticHeading = e.NewHeading.MagneticHeading;
-			p.HeadingAccuracy = e.NewHeading.HeadingAccuracy;
+			newPosition.Heading = e.NewHeading.TrueHeading;
+			newPosition.MagneticHeading = e.NewHeading.MagneticHeading;
+			newPosition.HeadingAccuracy = e.NewHeading.HeadingAccuracy;
 
-			_position = p;
+			_position = newPosition;
 
-			OnPositionChanged(new PositionEventArgs(p));
+			OnPositionChanged(new PositionEventArgs(newPosition));
 		}
 
 		private void OnLocationsUpdated(object sender, CLLocationsUpdatedEventArgs e)
@@ -292,32 +319,32 @@ namespace ChilliSource.Mobile.Location
 
 		private void UpdatePosition(CLLocation location)
 		{
-			var p = (_position == null) ? new Position() : new Position(_position);
+            var newPosition = (_position == null) ? new Position() : new Position(_position);
 
 			if (location.HorizontalAccuracy > -1)
 			{
-				p.Accuracy = location.HorizontalAccuracy;
-				p.Latitude = location.Coordinate.Latitude;
-				p.Longitude = location.Coordinate.Longitude;
-				p.Course = location.Course;
+				newPosition.Accuracy = location.HorizontalAccuracy;
+				newPosition.Latitude = location.Coordinate.Latitude;
+				newPosition.Longitude = location.Coordinate.Longitude;
+				newPosition.Course = location.Course;
 			}
 
 			if (location.VerticalAccuracy > -1)
 			{
-				p.Altitude = location.Altitude;
-				p.AltitudeAccuracy = location.VerticalAccuracy;
+				newPosition.Altitude = location.Altitude;
+				newPosition.AltitudeAccuracy = location.VerticalAccuracy;
 			}
 
 			if (location.Speed > -1)
 			{
-				p.Speed = location.Speed;
+				newPosition.Speed = location.Speed;
 			}
 
-			p.Timestamp = new DateTimeOffset((DateTime)location.Timestamp);
+			newPosition.Timestamp = new DateTimeOffset((DateTime)location.Timestamp);
 
-			_position = p;
+			_position = newPosition;
 
-			OnPositionChanged(new PositionEventArgs(p));
+			OnPositionChanged(new PositionEventArgs(newPosition));
 
 			location.Dispose();
 		}
@@ -340,22 +367,14 @@ namespace ChilliSource.Mobile.Location
 
 		private void OnPositionChanged(PositionEventArgs e)
 		{
-			var changed = PositionChanged;
-			if (changed != null)
-			{
-				changed(this, e);
-			}
+            PositionChanged?.Invoke(this, e);			
 		}
 
 		private void OnPositionError(PositionErrorEventArgs e)
 		{
 			StopListening();
 
-			var error = ErrorOccured;
-			if (error != null)
-			{
-				error(this, e);
-			}
+            ErrorOccured?.Invoke(this, e);			
 		}
 
 		#endregion

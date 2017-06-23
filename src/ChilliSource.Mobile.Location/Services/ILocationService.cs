@@ -32,6 +32,7 @@ See the LICENSE file in the project root for more information.
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using ChilliSource.Mobile.Core;
 
 namespace ChilliSource.Mobile.Location
 {
@@ -91,6 +92,17 @@ namespace ChilliSource.Mobile.Location
 		/// </summary>
 		void StopListening();
 
+        /// <summary>
+        /// Starts listening for coarse location changes while the app is in the background. 
+        /// Requiers "Always" location permissions to be approved by the user.
+        /// </summary>
+        void StartListeningForSignificantLocationChanges();
+
+        /// <summary>
+        /// Stops listening for coarse background location changes
+        /// </summary>
+        void StopListeningForSignificantLocationChanges();
+
 		/// <summary>
 		/// Returns the most recently captured position info of the device
 		/// </summary>
@@ -115,5 +127,12 @@ namespace ChilliSource.Mobile.Location
 		/// <param name="cancelToken">Cancel token.</param>
 		/// <param name="includeHeading">If set to <c>true</c> include heading.</param>
 		Task<Position> GetPositionAsync(int timeout, CancellationToken cancelToken, bool includeHeading = false);
+
+		/// <summary>
+		/// Calculates the distance between the current location and the specified <paramref name="referencePosition"/>
+		/// </summary>
+		/// <returns>The distance from.</returns>
+		/// <param name="referencePosition">Reference position.</param>
+		OperationResult<double> GetDistanceFrom(Position referencePosition);
 	}
 }
