@@ -5,8 +5,6 @@ using System.Text.RegularExpressions;
 // ADDINS
 //////////////////////////////////////////////////////////////////////
 
-#addin "Cake.FileHelpers"
-#addin "Cake.Xamarin"
 #addin nuget:?package=Newtonsoft.Json
 //////////////////////////////////////////////////////////////////////
 // TOOLS
@@ -179,23 +177,22 @@ Action<string,string> build = (solution, configuration) =>
     Information("Building {0}", solution);
 	using(BuildBlock("Build")) 
 	{			
-  		FilePath msBuildPath = VSWhereLatest().CombineWithFilePath("./MSBuild/15.0/Bin/MSBuild.exe");
+  		FilePath msBuildPath = null;
+
+		if(isRunningOnWindows) {
+			msBuildPath =  VSWhereLatest().CombineWithFilePath("./MSBuild/15.0/Bin/MSBuild.exe");
+		}
 
     	MSBuild(solution, settings => {
 			settings
 			.SetConfiguration(configuration);
 
-			settings.ToolPath = msBuildPath;
-
-			if(isRunningOnUnix) 
-			{
-				settings.WithTarget("restore");
-			}
-			else 
-			{
-				settings.WithTarget("restore;pack");
+			if(isRunningOnWindows) {
+				settings.ToolPath = msBuildPath;
 			}
 
+			settings.WithTarget("restore;pack");
+	
 			settings
 			.WithProperty("SourceLinkEnabled",  isCI)
 			.WithProperty("PackageOutputPath",  MakeAbsolute(Directory(artifactDirectory)).ToString())
@@ -251,7 +248,14 @@ Setup((context) =>
              Information("Not running on TeamCity");
         }
 
-         CleanDirectories(artifactDirectory);
+        DeleteFiles("../src/**/*.tmp");
+		DeleteFiles("../src/**/*.tmp.*");
+
+		CleanDirectories(GetDirectories("../src/**/obj"));
+		CleanDirectories(GetDirectories("../src/**/bin"));
+		DeleteDirectories(GetDirectories("../src/**/obj"));
+		DeleteDirectories(GetDirectories("../src/**/bin"));	
+		CleanDirectory(Directory(artifactDirectory));	
 });
 
 Teardown((context) =>

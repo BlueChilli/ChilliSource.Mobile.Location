@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;Xamarin.iOS10;MonoAndroid60;net462</TargetFrameworks>
+    <TargetFrameworks>netstandard1.6;Xamarin.iOS10;MonoAndroid70;net462</TargetFrameworks>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
     <PackageId>ChilliSource.Mobile.Logging</PackageId>    
     <Description>Logging Library for ChilliSource.Mobile framework</Description>
@@ -20,7 +20,7 @@
     <DocumentationFile>bin\Release\Xamarin.iOS10\ChilliSource.Mobile.Logging.xml</DocumentationFile>
     <NoWarn></NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|MonoAndroid60|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|MonoAndroid70|AnyCPU'">
     <DocumentationFile>bin\Release\MonoAndroid60\ChilliSource.Mobile.Logging.xml</DocumentationFile>
     <NoWarn></NoWarn>
   </PropertyGroup>
@@ -38,7 +38,7 @@
     <Compile Include="Sinks\Raygun\**\*.cs" />
     <PackageReference Include="Mindscape.Raygun4Net" Version="5.4.1" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'MonoAndroid60'">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'MonoAndroid70'">
     <Compile Include="Sinks\Raygun\**\*.cs" />
     <PackageReference Include="Mindscape.Raygun4Net" Version="5.4.1" />
   </ItemGroup>
