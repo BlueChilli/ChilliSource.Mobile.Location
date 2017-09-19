@@ -40,6 +40,7 @@ using Android.OS;
 using ChilliSource.Mobile.Location;
 using Java.Lang;
 using Xamarin.Forms;
+using ChilliSource.Mobile.Core;
 
 [assembly: Dependency(typeof(LocationService))]
 
@@ -136,25 +137,7 @@ namespace ChilliSource.Mobile.Location
 			_manager?.Dispose();
 			_manager = null;
 		}
-
-		public void StopListening()
-		{
-			if (_listener == null)
-			{
-				return;
-			}
-
-			_listener.PositionChanged -= OnListenerPositionChanged;
-			_listener.PositionError -= OnListenerPositionError;
-
-			for (var i = 0; i < _providers.Length; ++i)
-			{
-				_manager.RemoveUpdates(_listener);
-			}
-
-			_listener = null;
-		}
-
+        		
 		/// <summary>
 		/// Start listening to location changes
 		/// </summary>
@@ -191,6 +174,34 @@ namespace ChilliSource.Mobile.Location
 			{
 				_manager.RequestLocationUpdates(_providers[i], minTime, (float)minDistance, _listener, looper);
 			}
+		}
+
+		public void StopListening()
+		{
+			if (_listener == null)
+			{
+				return;
+			}
+
+			_listener.PositionChanged -= OnListenerPositionChanged;
+			_listener.PositionError -= OnListenerPositionError;
+
+			for (var i = 0; i < _providers.Length; ++i)
+			{
+				_manager.RemoveUpdates(_listener);
+			}
+
+			_listener = null;
+		}
+
+		public void StartListeningForSignificantLocationChanges()
+		{
+            throw new NotImplementedException();
+		}
+
+		public void StopListeningForSignificantLocationChanges()
+		{
+			throw new NotImplementedException();
 		}
 
 		public Task<Position> GetPositionAsync(CancellationToken cancelToken, bool includeHeading = false)
@@ -305,6 +316,39 @@ namespace ChilliSource.Mobile.Location
 			return tcs.Task;
 		}
 
+		public OperationResult<double> GetDistanceFrom(Position referencePosition)
+		{
+			if (referencePosition == null)
+			{
+				return OperationResult<double>.AsFailure("Invalid reference position specified");
+			}
+
+            if (_lastPosition == null)
+			{
+				return OperationResult<double>.AsFailure("Current position not available");
+			}
+
+           
+            float[] results = new float[1];
+            try
+            {
+                Android.Locations.Location.DistanceBetween(referencePosition.Latitude, referencePosition.Longitude, _lastPosition.Latitude, _lastPosition.Longitude, results);
+            }
+            catch (IllegalArgumentException e)
+            {
+                return OperationResult<double>.AsFailure(e);
+            }
+
+            if (results != null && results.Length > 0)
+            {
+                return OperationResult<double>.AsSuccess(results[0]);
+            }
+            else
+            {
+                return OperationResult<double>.AsFailure("Could not calculate distance");
+            }
+		}
+
 		#endregion
 
 		#region Event Handlers
@@ -320,23 +364,15 @@ namespace ChilliSource.Mobile.Location
 			{
 				_lastPosition = e.Position;
 
-				var changed = PositionChanged;
-				if (changed != null)
-				{
-					changed(this, e);
-				}
+                PositionChanged?.Invoke(this, e);				
 			}
 		}
 
 		private void OnListenerPositionError(object sender, PositionErrorEventArgs e)
 		{
 			StopListening();
-
-			var error = ErrorOccured;
-			if (error != null)
-			{
-				error(this, e);
-			}
+            			
+            ErrorOccured?.Invoke(this, e);			
 		}
 
 		#endregion
