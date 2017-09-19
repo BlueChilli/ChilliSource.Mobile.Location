@@ -89,7 +89,7 @@ var isRepository = StringComparer.OrdinalIgnoreCase.Equals(productName, projectN
 var isTagged = !String.IsNullOrEmpty(branch) && branch.ToUpper().Contains("TAGS");
 var buildConfName = EnvironmentVariable("TEAMCITY_BUILDCONF_NAME"); //teamCity.Environment.Build.BuildConfName
 var buildNumber = GetEnvironmentInteger("BUILD_NUMBER");
-var isReleaseBranch = StringComparer.OrdinalIgnoreCase.Equals("master", buildConfName) || StringComparer.OrdinalIgnoreCase.Equals("Release", buildConfName);
+var isReleaseBranch = StringComparer.OrdinalIgnoreCase.Equals("master", buildConfName)|| StringComparer.OrdinalIgnoreCase.Equals("release", buildConfName);
 
 var shouldAddLicenseHeader = false;
 if(!string.IsNullOrEmpty(EnvironmentVariable("ShouldAddLicenseHeader"))) {
@@ -134,6 +134,7 @@ if(string.IsNullOrEmpty(isCI))
 Func<string> GetMSBuildLoggerArguments = () => {
     return BuildSystem.TeamCity.IsRunningOnTeamCity ? EnvironmentVariable("MsBuildLogger"): null;
 };
+
 
 Action Abort = () => { throw new Exception("A non-recoverable fatal error occurred."); };
 Action<string> TestFailuresAbort = testResult => { throw new Exception(testResult); };
