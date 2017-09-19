@@ -77,6 +77,7 @@ if (result.IsSuccessful)
 }
 ```
 
+### Logging within ChilliSource.Mobile ###
 ### Google Directions ###
 
 To request directions, first construct a ```DirectionsRequest``` object with the start and end destination info. You can specify coordinates, addresses, or placeIds for the origin and destination:
@@ -155,3 +156,4 @@ ChilliSource.Mobile is licensed under the [MIT license](LICENSE).
 ## Feedback and Contact ##
 
 For questions or feedback, please contact [chillisource@bluechilli.com](mailto:chillisource@bluechilli.com).
+
