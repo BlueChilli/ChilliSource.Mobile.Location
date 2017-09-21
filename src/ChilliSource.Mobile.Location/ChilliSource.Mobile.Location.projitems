@@ -61,5 +61,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\DirectionsUrlFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\Step.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Google\Common\BaseService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\RegionEventArgs.cs" />
   </ItemGroup>
 </Project>
