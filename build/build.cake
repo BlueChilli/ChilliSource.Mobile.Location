@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 // ADDINS
 //////////////////////////////////////////////////////////////////////
 
-#addin "Cake.FileHelpers"
 #addin nuget:?package=Newtonsoft.Json
 //////////////////////////////////////////////////////////////////////
 // TOOLS
@@ -90,7 +89,7 @@ var isRepository = StringComparer.OrdinalIgnoreCase.Equals(productName, projectN
 var isTagged = !String.IsNullOrEmpty(branch) && branch.ToUpper().Contains("TAGS");
 var buildConfName = EnvironmentVariable("TEAMCITY_BUILDCONF_NAME"); //teamCity.Environment.Build.BuildConfName
 var buildNumber = GetEnvironmentInteger("BUILD_NUMBER");
-var isReleaseBranch = StringComparer.OrdinalIgnoreCase.Equals("master", buildConfName) || StringComparer.OrdinalIgnoreCase.Equals("Release", buildConfName);
+var isReleaseBranch = StringComparer.OrdinalIgnoreCase.Equals("master", buildConfName)|| StringComparer.OrdinalIgnoreCase.Equals("release", buildConfName);
 
 var shouldAddLicenseHeader = false;
 if(!string.IsNullOrEmpty(EnvironmentVariable("ShouldAddLicenseHeader"))) {
@@ -136,6 +135,7 @@ Func<string> GetMSBuildLoggerArguments = () => {
     return BuildSystem.TeamCity.IsRunningOnTeamCity ? EnvironmentVariable("MsBuildLogger"): null;
 };
 
+
 Action Abort = () => { throw new Exception("A non-recoverable fatal error occurred."); };
 Action<string> TestFailuresAbort = testResult => { throw new Exception(testResult); };
 Action NonMacOSAbort = () => { throw new Exception("Running on platforms other macOS is not supported."); };
@@ -180,7 +180,11 @@ Action<string,string> build = (solution, configuration) =>
     Information("Building {0}", solution);
 	using(BuildBlock("Build")) 
 	{			
-  		FilePath msBuildPath = VSWhereLatest().CombineWithFilePath("./MSBuild/15.0/Bin/MSBuild.exe");
+  		FilePath msBuildPath = null;
+
+		if(isRunningOnWindows) {
+		   msBuildPath = VSWhereLatest().CombineWithFilePath("./MSBuild/15.0/Bin/MSBuild.exe");
+		}  
 
   		Information("{0}", msBuildPath);
   		
@@ -188,17 +192,12 @@ Action<string,string> build = (solution, configuration) =>
 			settings
 			.SetConfiguration(configuration);
 
-			settings.ToolPath = msBuildPath;
-
-			if(isRunningOnUnix) 
-			{
-				settings.WithTarget("restore");
-			}
-			else 
-			{
-				settings.WithTarget("restore;pack");
+			if(isRunningOnWindows) {
+				settings.ToolPath = msBuildPath;
 			}
 
+			settings.WithTarget("restore;pack");
+			
 			settings
 			.WithProperty("SourceLinkEnabled",  isCI)
 			.WithProperty("PackageOutputPath",  MakeAbsolute(Directory(artifactDirectory)).ToString())
@@ -255,11 +254,13 @@ Setup((context) =>
              Information("Not running on TeamCity");
         }
 
-        DeleteFiles("../src/**/*.tmp");
+      	DeleteFiles("../src/**/*.tmp");
 		DeleteFiles("../src/**/*.tmp.*");
 
 		CleanDirectories(GetDirectories("../src/**/obj"));
-		CleanDirectories(GetDirectories("../src/**/bin"));		
+		CleanDirectories(GetDirectories("../src/**/bin"));
+		DeleteDirectories(GetDirectories("../src/**/obj"));
+		DeleteDirectories(GetDirectories("../src/**/bin"));	
 		CleanDirectory(Directory(artifactDirectory));	
 });
 
