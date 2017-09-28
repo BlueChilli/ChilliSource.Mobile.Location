@@ -51,9 +51,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\UnitType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Enums\TrafficModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Google\Common\GoogleApiResponseStatus.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Enums\GeolocationErrorType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Enums\LocationErrorType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entities\PositionErrorEventArgs.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Entities\GeolocationException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\LocationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entities\Position.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entities\PositionEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\Waypoint.cs" />
@@ -61,5 +61,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\DirectionsUrlFactory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Google\Maps\Directions\Models\Step.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Google\Common\BaseService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\RegionEventArgs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\AuthorizationEventArgs.cs" />
   </ItemGroup>
 </Project>
