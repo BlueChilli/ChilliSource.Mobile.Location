@@ -33,7 +33,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Android.App;
 using Android.Content;
 using Android.Locations;
 using Android.OS;
@@ -41,12 +40,6 @@ using ChilliSource.Mobile.Location;
 using Java.Lang;
 using Xamarin.Forms;
 using ChilliSource.Mobile.Core;
-
-using Android.Support.V4.Content;
-using Android;
-using Android.Content.PM;
-using Android.Support.V4.App;
-
 
 [assembly: Dependency(typeof(LocationService))]
 
@@ -61,6 +54,7 @@ namespace ChilliSource.Mobile.Location
         private LocationManager _manager;
         private readonly object _positionSync = new object();
         private string[] _providers;
+        double _desiredAccuracy;
         ILogger _logger;
 
         #region Properties
@@ -72,8 +66,6 @@ namespace ChilliSource.Mobile.Location
                 return _listener != null;
             }
         }
-
-        public double DesiredAccuracy { get; set; }
 
         public bool SupportsHeading
         {
@@ -129,9 +121,15 @@ namespace ChilliSource.Mobile.Location
 
         public event EventHandler<PositionEventArgs> PositionChanged;
 
+#pragma warning disable CS0067
+
         public event EventHandler<RegionEventArgs> OnRegionEntered;
 
         public event EventHandler<RegionEventArgs> OnRegionLeft;
+
+        public event EventHandler<AuthorizationEventArgs> OnLocationAuthorizationChanged;
+
+#pragma warning restore CS0067
 
         #endregion
 
@@ -154,6 +152,11 @@ namespace ChilliSource.Mobile.Location
 
         #region Location Monitoring
 
+        public void RequestAlwaysAuthorization()
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Start listening to location changes
         /// </summary>
@@ -166,20 +169,23 @@ namespace ChilliSource.Mobile.Location
         ///     minDistance
         /// </exception>
         /// <exception cref="System.InvalidOperationException">This Geolocator is already listening</exception>
-        public void StartListening(uint minTime, double minDistance, bool includeHeading)
+        public OperationResult StartListening(uint minTime, double minDistance, double desiredAccurancy = 0, bool includeHeading = false)
         {
+            if (IsListening)
+            {
+                return OperationResult.AsFailure("Already listening");
+            }
+
             if (minTime < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(minTime));
+                return OperationResult.AsFailure(new ArgumentOutOfRangeException(nameof(minTime)));
             }
             if (minDistance < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(minDistance));
+                return OperationResult.AsFailure(new ArgumentOutOfRangeException(nameof(minDistance)));
             }
-            if (IsListening)
-            {
-                throw new InvalidOperationException("This Geolocator is already listening");
-            }
+
+            _desiredAccuracy = desiredAccurancy;
 
             _listener = new GeolocationContinuousListener(_manager, TimeSpan.FromMilliseconds(minTime), _providers);
             _listener.PositionChanged += OnListenerPositionChanged;
@@ -190,13 +196,15 @@ namespace ChilliSource.Mobile.Location
             {
                 _manager.RequestLocationUpdates(_providers[i], minTime, (float)minDistance, _listener, looper);
             }
+
+            return OperationResult.AsSuccess();
         }
 
-        public void StopListening()
+        public OperationResult StopListening()
         {
-            if (_listener == null)
+            if (!IsListening)
             {
-                return;
+                return OperationResult.AsFailure("Location updates already stopped");
             }
 
             _listener.PositionChanged -= OnListenerPositionChanged;
@@ -208,6 +216,8 @@ namespace ChilliSource.Mobile.Location
             }
 
             _listener = null;
+
+            return OperationResult.AsSuccess();
         }
 
         public void StartListeningForSignificantLocationChanges()
@@ -239,30 +249,32 @@ namespace ChilliSource.Mobile.Location
 
         #region Position Management
 
-        public Task<Position> GetPositionAsync(CancellationToken cancelToken, bool includeHeading = false)
+        public Task<OperationResult<Position>> GetPositionAsync(CancellationToken cancelToken, bool includeHeading = false)
         {
             return GetPositionAsync(Timeout.Infinite, cancelToken);
         }
 
-        public Task<Position> GetPositionAsync(int timeout, bool includeHeading = false)
+        public Task<OperationResult<Position>> GetPositionAsync(int timeout, bool includeHeading = false)
         {
             return GetPositionAsync(timeout, CancellationToken.None);
         }
 
-        public Task<Position> GetPositionAsync(int timeout, CancellationToken cancelToken, bool includeHeading = false)
+        public Task<OperationResult<Position>> GetPositionAsync(int timeout, CancellationToken cancelToken, bool includeHeading = false)
         {
+            var tcs = new TaskCompletionSource<OperationResult<Position>>();
+
             if (timeout <= 0 && timeout != Timeout.Infinite)
             {
-                throw new ArgumentOutOfRangeException("timeout", "timeout must be greater than or equal to 0");
+                var exception = new ArgumentOutOfRangeException(nameof(timeout), "timeout must be greater than or equal to 0");
+                tcs.SetResult(OperationResult<Position>.AsFailure(exception));
+                return tcs.Task;
             }
-
-            var tcs = new TaskCompletionSource<Position>();
 
             if (!IsListening)
             {
                 GeolocationSingleListener singleListener = null;
                 singleListener = new GeolocationSingleListener(
-                    (float)DesiredAccuracy,
+                    (float)_desiredAccuracy,
                     timeout,
                     _providers.Where(_manager.IsProviderEnabled),
                     () =>
@@ -310,13 +322,13 @@ namespace ChilliSource.Mobile.Location
                             _manager.RemoveUpdates(singleListener);
                         }
 
-                        tcs.SetException(new GeolocationException(GeolocationError.PositionUnavailable));
+                        tcs.SetResult(OperationResult<Position>.AsFailure(new LocationException(LocationErrorType.PositionUnavailable)));
                         return tcs.Task;
                     }
                 }
                 catch (SecurityException ex)
                 {
-                    tcs.SetException(new GeolocationException(GeolocationError.Unauthorized, ex));
+                    tcs.SetResult(OperationResult<Position>.AsFailure(new LocationException(LocationErrorType.Unauthorized, ex)));
                     return tcs.Task;
                 }
 
@@ -336,7 +348,7 @@ namespace ChilliSource.Mobile.Location
                     EventHandler<PositionEventArgs> gotPosition = null;
                     gotPosition = (s, e) =>
                         {
-                            tcs.TrySetResult(e.Position);
+                            tcs.TrySetResult(OperationResult<Position>.AsSuccess(e.Position));
                             PositionChanged -= gotPosition;
                         };
 
@@ -344,7 +356,7 @@ namespace ChilliSource.Mobile.Location
                 }
                 else
                 {
-                    tcs.SetResult(_lastPosition);
+                    tcs.SetResult(OperationResult<Position>.AsSuccess(_lastPosition));
                 }
             }
 
@@ -367,7 +379,8 @@ namespace ChilliSource.Mobile.Location
             float[] results = new float[1];
             try
             {
-                Android.Locations.Location.DistanceBetween(referencePosition.Latitude, referencePosition.Longitude, _lastPosition.Latitude, _lastPosition.Longitude, results);
+                Android.Locations.Location.DistanceBetween(referencePosition.Latitude, referencePosition.Longitude,
+                                                           _lastPosition.Latitude, _lastPosition.Longitude, results);
             }
             catch (IllegalArgumentException e)
             {

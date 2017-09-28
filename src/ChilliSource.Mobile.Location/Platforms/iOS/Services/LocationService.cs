@@ -30,7 +30,6 @@ See the LICENSE file in the project root for more information.
 // 
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,7 +37,6 @@ using ChilliSource.Mobile.Core;
 using ChilliSource.Mobile.Location;
 using CoreLocation;
 using Foundation;
-using ObjCRuntime;
 using UIKit;
 using Xamarin.Forms;
 
@@ -51,11 +49,11 @@ namespace ChilliSource.Mobile.Location
         Position _position;
         CLLocationManager _manager;
         ILogger _logger;
-        //List<CLRegion> _monitoredRegions;
+        double _desiredAccuracy;
 
         #region Properties
 
-        public double DesiredAccuracy { get; set; }
+
 
         public bool IsListening { get; private set; }
 
@@ -95,14 +93,11 @@ namespace ChilliSource.Mobile.Location
 
         public event EventHandler<RegionEventArgs> OnRegionLeft;
 
+        public event EventHandler<AuthorizationEventArgs> OnLocationAuthorizationChanged;
+
         #endregion
 
         #region Lifecycle
-
-        public LocationService()
-        {
-            //_monitoredRegions = new List<CLRegion>();
-        }
 
         public void Initialize(LocationAuthorizationType authorizationType, bool allowBackgroundLocationUpdates, bool monitorRegions = false, ILogger logger = null)
         {
@@ -158,6 +153,17 @@ namespace ChilliSource.Mobile.Location
 
         #region Location Monitoring
 
+        public void RequestAlwaysAuthorization()
+        {
+            if (CLLocationManager.Status == CLAuthorizationStatus.AuthorizedWhenInUse)
+            {
+                if (UIDevice.CurrentDevice.CheckSystemVersion(11, 0))
+                {
+                    _manager.RequestAlwaysAuthorization();
+                }
+            }
+        }
+
         /// <summary>
         /// Start listening for location changes
         /// </summary>
@@ -170,29 +176,33 @@ namespace ChilliSource.Mobile.Location
         /// minDistance
         /// </exception>
         /// <exception cref="InvalidOperationException">Already listening</exception>
-        public void StartListening(uint minTime, double minDistance, bool includeHeading = false)
+        public OperationResult StartListening(uint minTime, double minDistance, double desiredAccurancy = 0, bool includeHeading = false)
         {
+            if (IsListening)
+            {
+                return OperationResult.AsFailure("Already listening");
+            }
+
+            if (minTime < 0)
+            {
+                return OperationResult.AsFailure(new ArgumentOutOfRangeException(nameof(minTime)));
+            }
+            if (minDistance < 0)
+            {
+                return OperationResult.AsFailure(new ArgumentOutOfRangeException(nameof(minDistance)));
+            }
+
+            _desiredAccuracy = desiredAccurancy;
+
             _manager.LocationsUpdated -= OnLocationsUpdated;
             _manager.UpdatedHeading -= OnHeadingUpdated;
 
             _manager.LocationsUpdated += OnLocationsUpdated;
             _manager.UpdatedHeading += OnHeadingUpdated;
 
-            if (minTime < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(minTime));
-            }
-            if (minDistance < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(minDistance));
-            }
-            if (IsListening)
-            {
-                throw new InvalidOperationException("Already listening");
-            }
-
             IsListening = true;
-            _manager.DesiredAccuracy = DesiredAccuracy;
+
+            _manager.DesiredAccuracy = _desiredAccuracy;
             _manager.DistanceFilter = minDistance;
             _manager.StartUpdatingLocation();
 
@@ -200,13 +210,16 @@ namespace ChilliSource.Mobile.Location
             {
                 _manager.StartUpdatingHeading();
             }
+
+            return OperationResult.AsSuccess();
         }
 
-        public void StopListening()
+
+        public OperationResult StopListening()
         {
             if (!IsListening)
             {
-                return;
+                return OperationResult.AsFailure("Location updates already stopped");
             }
 
             _manager.LocationsUpdated -= OnLocationsUpdated;
@@ -221,6 +234,8 @@ namespace ChilliSource.Mobile.Location
 
             _manager.StopUpdatingLocation();
             _position = null;
+
+            return OperationResult.AsSuccess();
         }
 
         public void StartListeningForSignificantLocationChanges()
@@ -244,7 +259,6 @@ namespace ChilliSource.Mobile.Location
                 NotifyOnEntry = true,
                 NotifyOnExit = true
             };
-            //_monitoredRegions.Add(beaconRegion);
 
             if (_manager != null)
             {
@@ -258,8 +272,6 @@ namespace ChilliSource.Mobile.Location
             var coordinate = new CLLocationCoordinate2D(centerPosition.Latitude, centerPosition.Longitude);
             var region = new CLCircularRegion(coordinate, radius, identifier);
 
-            //_monitoredRegions.Add(region);
-
             if (_manager != null)
             {
                 _manager.StartMonitoring(region);
@@ -271,12 +283,10 @@ namespace ChilliSource.Mobile.Location
         {
             var region = _manager.MonitoredRegions.ToArray<CLRegion>().FirstOrDefault(r => r.Identifier.Equals(identifier));
 
-            //var region = _monitoredRegions.FirstOrDefault(b => b.Identifier.Equals(identifier));
             if (_manager != null && region != null)
             {
                 _manager.StopMonitoring(region);
                 _logger?.Information($"iOS: Stopped monitoring: {identifier}");
-                //_monitoredRegions.Remove(region);
             }
         }
 
@@ -284,30 +294,34 @@ namespace ChilliSource.Mobile.Location
 
         #region Position Management
 
-        public Task<Position> GetPositionAsync(int timeout, bool includeHeading = false)
+        public Task<OperationResult<Position>> GetPositionAsync(int timeout, bool includeHeading = false)
         {
             return GetPositionAsync(timeout, CancellationToken.None, includeHeading);
         }
 
-        public Task<Position> GetPositionAsync(CancellationToken cancelToken, bool includeHeading = false)
+        public Task<OperationResult<Position>> GetPositionAsync(CancellationToken cancelToken, bool includeHeading = false)
         {
             return GetPositionAsync(Timeout.Infinite, cancelToken, includeHeading);
         }
 
-        public Task<Position> GetPositionAsync(int timeout, CancellationToken cancelToken, bool includeHeading = false)
+        public Task<OperationResult<Position>> GetPositionAsync(int timeout, CancellationToken cancelToken, bool includeHeading = false)
         {
+            TaskCompletionSource<OperationResult<Position>> tcs;
+
             if (timeout <= 0 && timeout != Timeout.Infinite)
             {
-                throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout must be positive or Timeout.Infinite");
+                tcs = new TaskCompletionSource<OperationResult<Position>>();
+                var exception = new ArgumentOutOfRangeException(nameof(timeout), "Timeout must be positive or Timeout.Infinite");
+                tcs.SetResult(OperationResult<Position>.AsFailure(exception));
+                return tcs.Task;
             }
 
-            TaskCompletionSource<Position> tcs;
             if (!IsListening)
             {
                 var manager = GetManager();
 
-                tcs = new TaskCompletionSource<Position>(manager);
-                var singleListener = new GeolocationSingleUpdateDelegate(manager, DesiredAccuracy, includeHeading, timeout, cancelToken);
+                tcs = new TaskCompletionSource<OperationResult<Position>>(manager);
+                var singleListener = new GeolocationSingleUpdateDelegate(manager, _desiredAccuracy, includeHeading, timeout, cancelToken);
                 manager.Delegate = singleListener;
 
                 manager.StartUpdatingLocation();
@@ -320,7 +334,7 @@ namespace ChilliSource.Mobile.Location
             }
             else
             {
-                tcs = new TaskCompletionSource<Position>();
+                tcs = new TaskCompletionSource<OperationResult<Position>>();
             }
 
             if (_position == null)
@@ -328,7 +342,8 @@ namespace ChilliSource.Mobile.Location
                 EventHandler<PositionErrorEventArgs> gotError = null;
                 gotError = (s, e) =>
                 {
-                    tcs.TrySetException(new GeolocationException(e.Error));
+                    tcs.SetResult(OperationResult<Position>.AsFailure(new LocationException(e.Error)));
+
                     ErrorOccured -= gotError;
                 };
 
@@ -337,7 +352,7 @@ namespace ChilliSource.Mobile.Location
                 EventHandler<PositionEventArgs> gotPosition = null;
                 gotPosition = (s, e) =>
                 {
-                    tcs.TrySetResult(e.Position);
+                    tcs.TrySetResult(OperationResult<Position>.AsSuccess(e.Position));
                     PositionChanged -= gotPosition;
                 };
 
@@ -345,7 +360,7 @@ namespace ChilliSource.Mobile.Location
             }
             else
             {
-                tcs.SetResult(_position);
+                tcs.SetResult(OperationResult<Position>.AsSuccess(_position));
             }
 
             return tcs.Task;
@@ -402,7 +417,7 @@ namespace ChilliSource.Mobile.Location
         {
             if ((int)e.Error.Code == (int)CLError.Network)
             {
-                OnPositionError(new PositionErrorEventArgs(GeolocationError.PositionUnavailable));
+                OnPositionError(new PositionErrorEventArgs(LocationErrorType.PositionUnavailable));
             }
         }
 
@@ -410,7 +425,17 @@ namespace ChilliSource.Mobile.Location
         {
             if (e.Status == CLAuthorizationStatus.Denied || e.Status == CLAuthorizationStatus.Restricted)
             {
-                OnPositionError(new PositionErrorEventArgs(GeolocationError.Unauthorized));
+                OnLocationAuthorizationChanged(this, new AuthorizationEventArgs(LocationAuthorizationType.None));
+
+                OnPositionError(new PositionErrorEventArgs(LocationErrorType.Unauthorized));
+            }
+            else if (e.Status == CLAuthorizationStatus.AuthorizedAlways)
+            {
+                OnLocationAuthorizationChanged(this, new AuthorizationEventArgs(LocationAuthorizationType.Always));
+            }
+            else if (e.Status == CLAuthorizationStatus.AuthorizedWhenInUse)
+            {
+                OnLocationAuthorizationChanged(this, new AuthorizationEventArgs(LocationAuthorizationType.WhenInUse));
             }
         }
 
@@ -432,16 +457,7 @@ namespace ChilliSource.Mobile.Location
 
         void LocationManager_DidDetermineState(object sender, CLRegionStateDeterminedEventArgs e)
         {
-            nint taskID = UIApplication.SharedApplication.BeginBackgroundTask(() => { });
-
             _logger?.Information($"iOS: State for {e.Region.Identifier} is {e.State.ToString()}");
-
-            if (e.State == CLRegionState.Inside)
-            {
-                OnRegionEntered?.Invoke(this, new RegionEventArgs(e.Region.Identifier));
-            }
-
-            UIApplication.SharedApplication.EndBackgroundTask(taskID);
         }
 
         void LocationManager_RegionEntered(object sender, CLRegionEventArgs e)

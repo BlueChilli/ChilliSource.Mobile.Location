@@ -16,7 +16,7 @@ namespace ChilliSource.Mobile.Location
     /// </summary>
 	public class PositionErrorEventArgs : EventArgs
 	{
-		public PositionErrorEventArgs(GeolocationError error)
+		public PositionErrorEventArgs(LocationErrorType error)
 		{
 			Error = error;
 		}
@@ -24,7 +24,7 @@ namespace ChilliSource.Mobile.Location
         /// <summary>
         /// Position retrieval error
         /// </summary>
-		public GeolocationError Error
+		public LocationErrorType Error
 		{
 			get;
 			private set;

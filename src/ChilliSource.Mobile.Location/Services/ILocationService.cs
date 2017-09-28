@@ -42,12 +42,6 @@ namespace ChilliSource.Mobile.Location
     public interface ILocationService
     {
         /// <summary>
-        /// Gets or sets the desired accuracy.
-        /// </summary>
-        /// <value>The desired accuracy.</value>
-        double DesiredAccuracy { get; set; }
-
-        /// <summary>
         /// Gets a value indicating whether the app is listening for location events.
         /// </summary>
         /// <value><c>true</c> if this instance is listening; otherwise, <c>false</c>.</value>
@@ -91,22 +85,44 @@ namespace ChilliSource.Mobile.Location
         /// </summary>
         event EventHandler<RegionEventArgs> OnRegionLeft;
 
+        /// <summary>
+        /// Triggered when the user changes the location authorization settings for the app
+        /// </summary>
+        event EventHandler<AuthorizationEventArgs> OnLocationAuthorizationChanged;
+
+        /// <summary>
+        /// Initialize the specified authorizationType, allowBackgroundLocationUpdates, monitorRegions and logger.
+        /// </summary>
+        /// <returns>The initialize.</returns>
+        /// <param name="authorizationType">Authorization type. See <see cref="LocationAuthorizationType"/></param>
+        /// <param name="allowBackgroundLocationUpdates">If set to <c>true</c> enables high-accuracy background location updates. 
+        /// Should only be used for navigation apps or apps that require high-accuracy location updates e.g. for safety and security, otherwise the app
+        /// will use up a lot of battery power unnecessarily and also risk getting rejected by Apple.</param>
+        /// <param name="monitorRegions">If set to <c>true</c> triggers region monitoring events.</param>
+        /// <param name="logger">Logger.</param>
         void Initialize(LocationAuthorizationType authorizationType, bool allowBackgroundLocationUpdates, bool monitorRegions = false, ILogger logger = null);
 
         void Dispose();
+
+        /// <summary>
+        /// Escalate location authorization to Always (iOS 11 only)
+        /// </summary>
+        void RequestAlwaysAuthorization();
 
         /// <summary>
         /// Start listening for location changes
         /// </summary>
         /// <param name="minTime">Minimum interval in milliseconds</param>
         /// <param name="minDistance">Minimum distance in meters</param>
+        /// <param name="desiredAccurancy">Specifies the accuracy tolerance in meters. 
+        /// The higher the number the less accurate the location data will be but the battery performance will be better.</param>
         /// <param name="includeHeading">Include heading information</param>
-        void StartListening(uint minTime, double minDistance, bool includeHeading = false);
+        OperationResult StartListening(uint minTime, double minDistance, double desiredAccurancy = 0, bool includeHeading = false);
 
         /// <summary>
         /// Stop listening for location changes
         /// </summary>
-        void StopListening();
+        OperationResult StopListening();
 
         /// <summary>
         /// Starts listening for coarse location changes while the app is in the background. 
@@ -153,7 +169,7 @@ namespace ChilliSource.Mobile.Location
         /// <returns>The position async.</returns>
         /// <param name="timeout">Timeout.</param>
         /// <param name="includeHeading">If set to <c>true</c> include heading.</param>
-        Task<Position> GetPositionAsync(int timeout, bool includeHeading = false);
+        Task<OperationResult<Position>> GetPositionAsync(int timeout, bool includeHeading = false);
 
         /// <summary>
         /// Returns the most recently captured position info of the device
@@ -161,7 +177,7 @@ namespace ChilliSource.Mobile.Location
         /// <returns>The position async.</returns>
         /// <param name="cancelToken">Cancel token.</param>
         /// <param name="includeHeading">If set to <c>true</c> include heading.</param>
-        Task<Position> GetPositionAsync(CancellationToken cancelToken, bool includeHeading = false);
+        Task<OperationResult<Position>> GetPositionAsync(CancellationToken cancelToken, bool includeHeading = false);
 
         /// <summary>
         /// Returns the most recently captured position info of the device
@@ -170,7 +186,7 @@ namespace ChilliSource.Mobile.Location
         /// <param name="timeout">Timeout.</param>
         /// <param name="cancelToken">Cancel token.</param>
         /// <param name="includeHeading">If set to <c>true</c> include heading.</param>
-        Task<Position> GetPositionAsync(int timeout, CancellationToken cancelToken, bool includeHeading = false);
+        Task<OperationResult<Position>> GetPositionAsync(int timeout, CancellationToken cancelToken, bool includeHeading = false);
 
         /// <summary>
         /// Calculates the distance between the current location and the specified <paramref name="referencePosition"/>
