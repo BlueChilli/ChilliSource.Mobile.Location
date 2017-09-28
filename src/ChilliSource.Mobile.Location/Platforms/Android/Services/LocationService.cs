@@ -33,7 +33,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Android.App;
 using Android.Content;
 using Android.Locations;
 using Android.OS;
@@ -46,293 +45,342 @@ using ChilliSource.Mobile.Core;
 
 namespace ChilliSource.Mobile.Location
 {
-	public class LocationService : ILocationService
-	{
-		private static readonly DateTime Epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-		private string _headingProvider;
-		private Position _lastPosition;
-		private GeolocationContinuousListener _listener;
-		private LocationManager _manager;
-		private readonly object _positionSync = new object();
-		private string[] _providers;
+    public class LocationService : ILocationService
+    {
+        private static readonly DateTime Epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        private string _headingProvider;
+        private Position _lastPosition;
+        private GeolocationContinuousListener _listener;
+        private LocationManager _manager;
+        private readonly object _positionSync = new object();
+        private string[] _providers;
+        double _desiredAccuracy;
+        ILogger _logger;
 
-		#region Properties
+        #region Properties
 
-		public bool IsListening
-		{
-			get
-			{
-				return _listener != null;
-			}
-		}
+        public bool IsListening
+        {
+            get
+            {
+                return _listener != null;
+            }
+        }
 
-		public double DesiredAccuracy { get; set; }
+        public bool SupportsHeading
+        {
+            get
+            {
 
-		public bool SupportsHeading
-		{
-			get
-			{
+                if (string.IsNullOrEmpty(_headingProvider) || _manager.IsProviderEnabled(_headingProvider))
+                {
+                    Criteria c = new Criteria { BearingRequired = true };
+                    string providerName = _manager.GetBestProvider(c, enabledOnly: false);
 
-				if (string.IsNullOrEmpty(_headingProvider) || _manager.IsProviderEnabled(_headingProvider))
-				{
-					Criteria c = new Criteria { BearingRequired = true };
-					string providerName = _manager.GetBestProvider(c, enabledOnly: false);
+                    LocationProvider provider = _manager.GetProvider(providerName);
 
-					LocationProvider provider = _manager.GetProvider(providerName);
+                    if (provider.SupportsBearing())
+                    {
+                        _headingProvider = providerName;
+                        return true;
+                    }
+                    else
+                    {
+                        _headingProvider = null;
+                        return false;
+                    }
+                }
+                else
+                {
+                    return true;
+                }
+            }
+        }
 
-					if (provider.SupportsBearing())
-					{
-						_headingProvider = providerName;
-						return true;
-					}
-					else
-					{
-						_headingProvider = null;
-						return false;
-					}
-				}
-				else
-				{
-					return true;
-				}
-			}
-		}
+        public bool IsGeolocationAvailable
+        {
+            get
+            {
+                return _providers.Length > 0;
+            }
+        }
 
-		public bool IsGeolocationAvailable
-		{
-			get
-			{
-				return _providers.Length > 0;
-			}
-		}
+        public bool IsGeolocationEnabled
+        {
+            get
+            {
+                return _providers.Any(_manager.IsProviderEnabled);
+            }
+        }
 
-		public bool IsGeolocationEnabled
-		{
-			get
-			{
-				return _providers.Any(_manager.IsProviderEnabled);
-			}
-		}
+        #endregion
 
-		#endregion
+        #region Events
 
-		#region Events
+        public event EventHandler<PositionErrorEventArgs> ErrorOccured;
 
-		public event EventHandler<PositionErrorEventArgs> ErrorOccured;
+        public event EventHandler<PositionEventArgs> PositionChanged;
 
-		public event EventHandler<PositionEventArgs> PositionChanged;
+#pragma warning disable CS0067
 
-		#endregion
+        public event EventHandler<RegionEventArgs> OnRegionEntered;
 
-		#region Public Methods
+        public event EventHandler<RegionEventArgs> OnRegionLeft;
 
-		public void Initialize(LocationAuthorizationType authorizationType, bool allowBackgroundLocationUpdates)
-		{
-			_manager = (LocationManager)Android.App.Application.Context.GetSystemService(Context.LocationService);
-			_providers = _manager.GetProviders(false).Where(s => s != LocationManager.PassiveProvider).ToArray();
-		}
+        public event EventHandler<AuthorizationEventArgs> OnLocationAuthorizationChanged;
 
-		public void Dispose()
-		{
-			_manager?.Dispose();
-			_manager = null;
-		}
-        		
-		/// <summary>
-		/// Start listening to location changes
-		/// </summary>
-		/// <param name="minTime">Minimum interval in milliseconds</param>
-		/// <param name="minDistance">Minimum distance in meters</param>
-		/// <param name="includeHeading">Include heading information</param>
-		/// <exception cref="System.ArgumentOutOfRangeException">
-		///     minTime
-		///     or
-		///     minDistance
-		/// </exception>
-		/// <exception cref="System.InvalidOperationException">This Geolocator is already listening</exception>
-		public void StartListening(uint minTime, double minDistance, bool includeHeading)
-		{
-			if (minTime < 0)
-			{
-				throw new ArgumentOutOfRangeException(nameof(minTime));
-			}
-			if (minDistance < 0)
-			{
-				throw new ArgumentOutOfRangeException(nameof(minDistance));
-			}
-			if (IsListening)
-			{
-				throw new InvalidOperationException("This Geolocator is already listening");
-			}
+#pragma warning restore CS0067
 
-			_listener = new GeolocationContinuousListener(_manager, TimeSpan.FromMilliseconds(minTime), _providers);
-			_listener.PositionChanged += OnListenerPositionChanged;
-			_listener.PositionError += OnListenerPositionError;
+        #endregion
 
-			var looper = Looper.MyLooper() ?? Looper.MainLooper;
-			for (var i = 0; i < _providers.Length; ++i)
-			{
-				_manager.RequestLocationUpdates(_providers[i], minTime, (float)minDistance, _listener, looper);
-			}
-		}
+        #region Lifecycle
 
-		public void StopListening()
-		{
-			if (_listener == null)
-			{
-				return;
-			}
+        public void Initialize(LocationAuthorizationType authorizationType, bool allowBackgroundLocationUpdates, bool monitorRegions = false, ILogger logger = null)
+        {
+            _logger = logger;
+            _manager = (LocationManager)Android.App.Application.Context.GetSystemService(Context.LocationService);
+            _providers = _manager.GetProviders(false).Where(s => s != LocationManager.PassiveProvider).ToArray();
+        }
 
-			_listener.PositionChanged -= OnListenerPositionChanged;
-			_listener.PositionError -= OnListenerPositionError;
+        public void Dispose()
+        {
+            _manager?.Dispose();
+            _manager = null;
+        }
 
-			for (var i = 0; i < _providers.Length; ++i)
-			{
-				_manager.RemoveUpdates(_listener);
-			}
+        #endregion
 
-			_listener = null;
-		}
+        #region Location Monitoring
 
-		public void StartListeningForSignificantLocationChanges()
-		{
+        public void RequestAlwaysAuthorization()
+        {
             throw new NotImplementedException();
-		}
+        }
 
-		public void StopListeningForSignificantLocationChanges()
-		{
-			throw new NotImplementedException();
-		}
+        /// <summary>
+        /// Start listening to location changes
+        /// </summary>
+        /// <param name="minTime">Minimum interval in milliseconds</param>
+        /// <param name="minDistance">Minimum distance in meters</param>
+        /// <param name="includeHeading">Include heading information</param>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        ///     minTime
+        ///     or
+        ///     minDistance
+        /// </exception>
+        /// <exception cref="System.InvalidOperationException">This Geolocator is already listening</exception>
+        public OperationResult StartListening(uint minTime, double minDistance, double desiredAccurancy = 0, bool includeHeading = false)
+        {
+            if (IsListening)
+            {
+                return OperationResult.AsFailure("Already listening");
+            }
 
-		public Task<Position> GetPositionAsync(CancellationToken cancelToken, bool includeHeading = false)
-		{
-			return GetPositionAsync(Timeout.Infinite, cancelToken);
-		}
+            if (minTime < 0)
+            {
+                return OperationResult.AsFailure(new ArgumentOutOfRangeException(nameof(minTime)));
+            }
+            if (minDistance < 0)
+            {
+                return OperationResult.AsFailure(new ArgumentOutOfRangeException(nameof(minDistance)));
+            }
 
-		public Task<Position> GetPositionAsync(int timeout, bool includeHeading = false)
-		{
-			return GetPositionAsync(timeout, CancellationToken.None);
-		}
+            _desiredAccuracy = desiredAccurancy;
 
-		public Task<Position> GetPositionAsync(int timeout, CancellationToken cancelToken, bool includeHeading = false)
-		{
-			if (timeout <= 0 && timeout != Timeout.Infinite)
-			{
-				throw new ArgumentOutOfRangeException("timeout", "timeout must be greater than or equal to 0");
-			}
+            _listener = new GeolocationContinuousListener(_manager, TimeSpan.FromMilliseconds(minTime), _providers);
+            _listener.PositionChanged += OnListenerPositionChanged;
+            _listener.PositionError += OnListenerPositionError;
 
-			var tcs = new TaskCompletionSource<Position>();
+            var looper = Looper.MyLooper() ?? Looper.MainLooper;
+            for (var i = 0; i < _providers.Length; ++i)
+            {
+                _manager.RequestLocationUpdates(_providers[i], minTime, (float)minDistance, _listener, looper);
+            }
 
-			if (!IsListening)
-			{
-				GeolocationSingleListener singleListener = null;
-				singleListener = new GeolocationSingleListener(
-					(float)DesiredAccuracy,
-					timeout,
-					_providers.Where(_manager.IsProviderEnabled),
-					() =>
-						{
-							for (var i = 0; i < _providers.Length; ++i)
-							{
-								_manager.RemoveUpdates(singleListener);
-							}
-						});
+            return OperationResult.AsSuccess();
+        }
 
-				if (cancelToken != CancellationToken.None)
-				{
-					cancelToken.Register(
-						() =>
-							{
-								singleListener.Cancel();
+        public OperationResult StopListening()
+        {
+            if (!IsListening)
+            {
+                return OperationResult.AsFailure("Location updates already stopped");
+            }
 
-								for (var i = 0; i < _providers.Length; ++i)
-								{
-									_manager.RemoveUpdates(singleListener);
-								}
-							},
-						true);
-				}
+            _listener.PositionChanged -= OnListenerPositionChanged;
+            _listener.PositionError -= OnListenerPositionError;
 
-				try
-				{
-					var looper = Looper.MyLooper() ?? Looper.MainLooper;
+            for (var i = 0; i < _providers.Length; ++i)
+            {
+                _manager.RemoveUpdates(_listener);
+            }
 
-					var enabled = 0;
-					for (var i = 0; i < _providers.Length; ++i)
-					{
-						if (_manager.IsProviderEnabled(_providers[i]))
-						{
-							enabled++;
-						}
+            _listener = null;
 
-						_manager.RequestLocationUpdates(_providers[i], 0, 0, singleListener, looper);
-					}
+            return OperationResult.AsSuccess();
+        }
 
-					if (enabled == 0)
-					{
-						for (var i = 0; i < _providers.Length; ++i)
-						{
-							_manager.RemoveUpdates(singleListener);
-						}
+        public void StartListeningForSignificantLocationChanges()
+        {
+            throw new NotImplementedException();
+        }
 
-						tcs.SetException(new GeolocationException(GeolocationError.PositionUnavailable));
-						return tcs.Task;
-					}
-				}
-				catch (SecurityException ex)
-				{
-					tcs.SetException(new GeolocationException(GeolocationError.Unauthorized, ex));
-					return tcs.Task;
-				}
+        public void StopListeningForSignificantLocationChanges()
+        {
+            throw new NotImplementedException();
+        }
 
-				return singleListener.Task;
-			}
+        public void StartMonitoringBeaconRegion(string uuid, ushort major, ushort minor, string identifier)
+        {
+            throw new NotImplementedException();
+        }
 
-			// If we're already listening, just use the current listener
-			lock (_positionSync)
-			{
-				if (_lastPosition == null)
-				{
-					if (cancelToken != CancellationToken.None)
-					{
-						cancelToken.Register(() => tcs.TrySetCanceled());
-					}
+        public void StartMonitoringCircularRegion(Position centerPosition, double radius, string identifier)
+        {
+            throw new NotImplementedException();
+        }
 
-					EventHandler<PositionEventArgs> gotPosition = null;
-					gotPosition = (s, e) =>
-						{
-							tcs.TrySetResult(e.Position);
-							PositionChanged -= gotPosition;
-						};
+        public void StopMonitoringRegion(string identifier)
+        {
+            throw new NotImplementedException();
+        }
 
-					PositionChanged += gotPosition;
-				}
-				else
-				{
-					tcs.SetResult(_lastPosition);
-				}
-			}
+        #endregion
 
-			return tcs.Task;
-		}
+        #region Position Management
 
-		public OperationResult<double> GetDistanceFrom(Position referencePosition)
-		{
-			if (referencePosition == null)
-			{
-				return OperationResult<double>.AsFailure("Invalid reference position specified");
-			}
+        public Task<OperationResult<Position>> GetPositionAsync(CancellationToken cancelToken, bool includeHeading = false)
+        {
+            return GetPositionAsync(Timeout.Infinite, cancelToken);
+        }
+
+        public Task<OperationResult<Position>> GetPositionAsync(int timeout, bool includeHeading = false)
+        {
+            return GetPositionAsync(timeout, CancellationToken.None);
+        }
+
+        public Task<OperationResult<Position>> GetPositionAsync(int timeout, CancellationToken cancelToken, bool includeHeading = false)
+        {
+            var tcs = new TaskCompletionSource<OperationResult<Position>>();
+
+            if (timeout <= 0 && timeout != Timeout.Infinite)
+            {
+                var exception = new ArgumentOutOfRangeException(nameof(timeout), "timeout must be greater than or equal to 0");
+                tcs.SetResult(OperationResult<Position>.AsFailure(exception));
+                return tcs.Task;
+            }
+
+            if (!IsListening)
+            {
+                GeolocationSingleListener singleListener = null;
+                singleListener = new GeolocationSingleListener(
+                    (float)_desiredAccuracy,
+                    timeout,
+                    _providers.Where(_manager.IsProviderEnabled),
+                    () =>
+                        {
+                            for (var i = 0; i < _providers.Length; ++i)
+                            {
+                                _manager.RemoveUpdates(singleListener);
+                            }
+                        });
+
+                if (cancelToken != CancellationToken.None)
+                {
+                    cancelToken.Register(
+                        () =>
+                            {
+                                singleListener.Cancel();
+
+                                for (var i = 0; i < _providers.Length; ++i)
+                                {
+                                    _manager.RemoveUpdates(singleListener);
+                                }
+                            },
+                        true);
+                }
+
+                try
+                {
+                    var looper = Looper.MyLooper() ?? Looper.MainLooper;
+
+                    var enabled = 0;
+                    for (var i = 0; i < _providers.Length; ++i)
+                    {
+                        if (_manager.IsProviderEnabled(_providers[i]))
+                        {
+                            enabled++;
+                        }
+
+                        _manager.RequestLocationUpdates(_providers[i], 0, 0, singleListener, looper);
+                    }
+
+                    if (enabled == 0)
+                    {
+                        for (var i = 0; i < _providers.Length; ++i)
+                        {
+                            _manager.RemoveUpdates(singleListener);
+                        }
+
+                        tcs.SetResult(OperationResult<Position>.AsFailure(new LocationException(LocationErrorType.PositionUnavailable)));
+                        return tcs.Task;
+                    }
+                }
+                catch (SecurityException ex)
+                {
+                    tcs.SetResult(OperationResult<Position>.AsFailure(new LocationException(LocationErrorType.Unauthorized, ex)));
+                    return tcs.Task;
+                }
+
+                return singleListener.Task;
+            }
+
+            // If we're already listening, just use the current listener
+            lock (_positionSync)
+            {
+                if (_lastPosition == null)
+                {
+                    if (cancelToken != CancellationToken.None)
+                    {
+                        cancelToken.Register(() => tcs.TrySetCanceled());
+                    }
+
+                    EventHandler<PositionEventArgs> gotPosition = null;
+                    gotPosition = (s, e) =>
+                        {
+                            tcs.TrySetResult(OperationResult<Position>.AsSuccess(e.Position));
+                            PositionChanged -= gotPosition;
+                        };
+
+                    PositionChanged += gotPosition;
+                }
+                else
+                {
+                    tcs.SetResult(OperationResult<Position>.AsSuccess(_lastPosition));
+                }
+            }
+
+            return tcs.Task;
+        }
+
+        public OperationResult<double> GetDistanceFrom(Position referencePosition)
+        {
+            if (referencePosition == null)
+            {
+                return OperationResult<double>.AsFailure("Invalid reference position specified");
+            }
 
             if (_lastPosition == null)
-			{
-				return OperationResult<double>.AsFailure("Current position not available");
-			}
+            {
+                return OperationResult<double>.AsFailure("Current position not available");
+            }
 
-           
+
             float[] results = new float[1];
             try
             {
-                Android.Locations.Location.DistanceBetween(referencePosition.Latitude, referencePosition.Longitude, _lastPosition.Latitude, _lastPosition.Longitude, results);
+                Android.Locations.Location.DistanceBetween(referencePosition.Latitude, referencePosition.Longitude,
+                                                           _lastPosition.Latitude, _lastPosition.Longitude, results);
             }
             catch (IllegalArgumentException e)
             {
@@ -347,43 +395,43 @@ namespace ChilliSource.Mobile.Location
             {
                 return OperationResult<double>.AsFailure("Could not calculate distance");
             }
-		}
+        }
 
-		#endregion
+        #endregion
 
-		#region Event Handlers
+        #region Event Handlers
 
-		private void OnListenerPositionChanged(object sender, PositionEventArgs e)
-		{
-			if (!IsListening) // ignore anything that might come in afterwards
-			{
-				return;
-			}
+        private void OnListenerPositionChanged(object sender, PositionEventArgs e)
+        {
+            if (!IsListening) // ignore anything that might come in afterwards
+            {
+                return;
+            }
 
-			lock (_positionSync)
-			{
-				_lastPosition = e.Position;
+            lock (_positionSync)
+            {
+                _lastPosition = e.Position;
 
-                PositionChanged?.Invoke(this, e);				
-			}
-		}
+                PositionChanged?.Invoke(this, e);
+            }
+        }
 
-		private void OnListenerPositionError(object sender, PositionErrorEventArgs e)
-		{
-			StopListening();
-            			
-            ErrorOccured?.Invoke(this, e);			
-		}
+        private void OnListenerPositionError(object sender, PositionErrorEventArgs e)
+        {
+            StopListening();
 
-		#endregion
+            ErrorOccured?.Invoke(this, e);
+        }
 
-		#region Helper methods
+        #endregion
 
-		internal static DateTimeOffset GetTimestamp(Android.Locations.Location location)
-		{
-			return new DateTimeOffset(Epoch.AddMilliseconds(location.Time));
-		}
+        #region Helper methods
 
-		#endregion
-	}
+        internal static DateTimeOffset GetTimestamp(Android.Locations.Location location)
+        {
+            return new DateTimeOffset(Epoch.AddMilliseconds(location.Time));
+        }
+
+        #endregion
+    }
 }

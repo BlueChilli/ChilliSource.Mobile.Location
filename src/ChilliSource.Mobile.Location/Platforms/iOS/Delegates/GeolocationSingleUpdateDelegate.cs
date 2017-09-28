@@ -32,234 +32,159 @@ See the LICENSE file in the project root for more information.
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using ChilliSource.Mobile.Core;
 using CoreLocation;
 using Foundation;
 using Xamarin.Forms.Maps;
 
 namespace ChilliSource.Mobile.Location
 {
-	/// <summary>
-	/// Class GeolocationSingleUpdateDelegate.
-	/// </summary>
-	internal class GeolocationSingleUpdateDelegate : CLLocationManagerDelegate
-	{
-		/// <summary>
-		/// The _best heading
-		/// </summary>
-		private CLHeading _bestHeading;
+    internal class GeolocationSingleUpdateDelegate : CLLocationManagerDelegate
+    {
+        private Timer _timer;
+        private CLHeading _bestHeading;
+        private bool _hasHeading;
+        private bool _hasLocation;
+        private readonly double _desiredAccuracy;
+        private readonly bool _includeHeading;
+        private readonly CLLocationManager _manager;
+        private readonly Position _position = new Position();
+        private readonly TaskCompletionSource<OperationResult<Position>> _tcs;
 
-		/// <summary>
-		/// The _have heading
-		/// </summary>
-		private bool _haveHeading;
+        public GeolocationSingleUpdateDelegate(
+            CLLocationManager manager,
+            double desiredAccuracy,
+            bool includeHeading,
+            int timeout,
+            CancellationToken cancelToken)
+        {
+            _manager = manager;
+            _tcs = new TaskCompletionSource<OperationResult<Position>>(manager);
+            _desiredAccuracy = desiredAccuracy;
+            _includeHeading = includeHeading;
 
-		/// <summary>
-		/// The _have location
-		/// </summary>
-		private bool _haveLocation;
+            if (timeout != Timeout.Infinite)
+            {
+                _timer = new Timer(HandleTimerCallback, null, timeout, 0);
+            }
 
-		/// <summary>
-		/// The _desired accuracy
-		/// </summary>
-		private readonly double _desiredAccuracy;
+            cancelToken.Register(() =>
+                {
+                    StopListening();
+                    _tcs.TrySetCanceled();
+                });
+        }
 
-		/// <summary>
-		/// The _include heading
-		/// </summary>
-		private readonly bool _includeHeading;
+        public Task<OperationResult<Position>> Task
+        {
+            get
+            {
+                return _tcs.Task;
+            }
+        }
 
-		/// <summary>
-		/// The _manager
-		/// </summary>
-		private readonly CLLocationManager _manager;
+        public override void AuthorizationChanged(CLLocationManager manager, CLAuthorizationStatus status)
+        {
+            // If user has services disabled, we're just going to throw an exception for consistency.
+            if (status == CLAuthorizationStatus.Denied || status == CLAuthorizationStatus.Restricted)
+            {
+                StopListening();
+                _tcs.SetResult(OperationResult<Position>.AsFailure(new LocationException(LocationErrorType.Unauthorized)));
+            }
+        }
 
-		/// <summary>
-		/// The _position
-		/// </summary>
-		private readonly Position _position = new Position();
+        public override void Failed(CLLocationManager manager, NSError error)
+        {
+            switch ((CLError)(int)error.Code)
+            {
+                case CLError.Network:
+                    {
+                        StopListening();
+                        _tcs.SetResult(OperationResult<Position>.AsFailure((new LocationException(LocationErrorType.PositionUnavailable))));
+                        break;
+                    }
+            }
+        }
 
-		/// <summary>
-		/// The _TCS
-		/// </summary>
-		private readonly TaskCompletionSource<Position> _tcs;
+        public override bool ShouldDisplayHeadingCalibration(CLLocationManager manager)
+        {
+            return true;
+        }
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="GeolocationSingleUpdateDelegate"/> class.
-		/// </summary>
-		/// <param name="manager">The manager.</param>
-		/// <param name="desiredAccuracy">The desired accuracy.</param>
-		/// <param name="includeHeading">if set to <c>true</c> [include heading].</param>
-		/// <param name="timeout">The timeout.</param>
-		/// <param name="cancelToken">The cancel token.</param>
-		public GeolocationSingleUpdateDelegate(
-			CLLocationManager manager,
-			double desiredAccuracy,
-			bool includeHeading,
-			int timeout,
-			CancellationToken cancelToken)
-		{
-			_manager = manager;
-			_tcs = new TaskCompletionSource<Position>(manager);
-			_desiredAccuracy = desiredAccuracy;
-			_includeHeading = includeHeading;
+        public override void UpdatedLocation(CLLocationManager manager, CLLocation newLocation, CLLocation oldLocation)
+        {
+            if (newLocation.HorizontalAccuracy < 0)
+            {
+                return;
+            }
 
-			if (timeout != Timeout.Infinite)
-			{
-				Timer t = null;
-				t = new Timer(
-					s =>
-						{
-							if (_haveLocation)
-							{
-								_tcs.TrySetResult(new Position(_position));
-							}
-							else
-							{
-								_tcs.TrySetCanceled();
-							}
+            if (_hasLocation && newLocation.HorizontalAccuracy > _position.Accuracy)
+            {
+                return;
+            }
 
-							StopListening();
-							t.Dispose();
-						},
-					null,
-					timeout,
-					0);
-			}
+            _position.Accuracy = newLocation.HorizontalAccuracy;
+            _position.Altitude = newLocation.Altitude;
+            _position.AltitudeAccuracy = newLocation.VerticalAccuracy;
+            _position.Latitude = newLocation.Coordinate.Latitude;
+            _position.Longitude = newLocation.Coordinate.Longitude;
+            _position.Speed = newLocation.Speed;
+            _position.Timestamp = new DateTimeOffset((DateTime)newLocation.Timestamp);
 
-			cancelToken.Register(
-				() =>
-					{
-						StopListening();
-						_tcs.TrySetCanceled();
-					});
-		}
+            _hasLocation = true;
 
-		/// <summary>
-		/// Gets the task.
-		/// </summary>
-		/// <value>The task.</value>
-		public Task<Position> Task
-		{
-			get
-			{
-				return _tcs.Task;
-			}
-		}
+            if ((!_includeHeading || _hasHeading) && _position.Accuracy <= _desiredAccuracy)
+            {
+                _tcs.TrySetResult(OperationResult<Position>.AsSuccess(new Position(_position)));
+                StopListening();
+            }
+        }
 
-		/// <summary>
-		/// Authorizations the changed.
-		/// </summary>
-		/// <param name="manager">The manager.</param>
-		/// <param name="status">The status.</param>
-		public override void AuthorizationChanged(CLLocationManager manager, CLAuthorizationStatus status)
-		{
-			// If user has services disabled, we're just going to throw an exception for consistency.
-			if (status == CLAuthorizationStatus.Denied || status == CLAuthorizationStatus.Restricted)
-			{
-				StopListening();
-				_tcs.TrySetException(new GeolocationException(GeolocationError.Unauthorized));
-			}
-		}
+        public override void UpdatedHeading(CLLocationManager manager, CLHeading newHeading)
+        {
+            if (newHeading.HeadingAccuracy < 0)
+            {
+                return;
+            }
+            if (_bestHeading != null && newHeading.HeadingAccuracy >= _bestHeading.HeadingAccuracy)
+            {
+                return;
+            }
 
-		/// <summary>
-		/// Faileds the specified manager.
-		/// </summary>
-		/// <param name="manager">The manager.</param>
-		/// <param name="error">The error.</param>
-		public override void Failed(CLLocationManager manager, NSError error)
-		{
-			switch ((CLError)(int)error.Code)
-			{
-				case CLError.Network:
-					StopListening();
-					_tcs.SetException(new GeolocationException(GeolocationError.PositionUnavailable));
-					break;
-			}
-		}
+            _bestHeading = newHeading;
+            _position.Heading = newHeading.TrueHeading;
+            _hasHeading = true;
 
-		/// <summary>
-		/// Shoulds the display heading calibration.
-		/// </summary>
-		/// <param name="manager">The manager.</param>
-		/// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
-		public override bool ShouldDisplayHeadingCalibration(CLLocationManager manager)
-		{
-			return true;
-		}
+            if (_hasLocation && _position.Accuracy <= _desiredAccuracy)
+            {
+                _tcs.TrySetResult(OperationResult<Position>.AsSuccess(new Position(_position)));
+                StopListening();
+            }
+        }
 
-		/// <summary>
-		/// Updateds the location.
-		/// </summary>
-		/// <param name="manager">The manager.</param>
-		/// <param name="newLocation">The new location.</param>
-		/// <param name="oldLocation">The old location.</param>
-		public override void UpdatedLocation(CLLocationManager manager, CLLocation newLocation, CLLocation oldLocation)
-		{
-			if (newLocation.HorizontalAccuracy < 0)
-			{
-				return;
-			}
+        void StopListening()
+        {
+            if (CLLocationManager.HeadingAvailable)
+            {
+                _manager.StopUpdatingHeading();
+            }
 
-			if (_haveLocation && newLocation.HorizontalAccuracy > _position.Accuracy)
-			{
-				return;
-			}
+            _manager.StopUpdatingLocation();
+        }
 
-			_position.Accuracy = newLocation.HorizontalAccuracy;
-			_position.Altitude = newLocation.Altitude;
-			_position.AltitudeAccuracy = newLocation.VerticalAccuracy;
-			_position.Latitude = newLocation.Coordinate.Latitude;
-			_position.Longitude = newLocation.Coordinate.Longitude;
-			_position.Speed = newLocation.Speed;
-			_position.Timestamp = new DateTimeOffset((DateTime)newLocation.Timestamp);
+        void HandleTimerCallback(object state)
+        {
+            if (_hasLocation)
+            {
+                _tcs.TrySetResult(OperationResult<Position>.AsSuccess(new Position(_position)));
+            }
+            else
+            {
+                _tcs.TrySetCanceled();
+            }
 
-			_haveLocation = true;
-
-			if ((!_includeHeading || _haveHeading) && _position.Accuracy <= _desiredAccuracy)
-			{
-				_tcs.TrySetResult(new Position(_position));
-				StopListening();
-			}
-		}
-
-		/// <summary>
-		/// Updateds the heading.
-		/// </summary>
-		/// <param name="manager">The manager.</param>
-		/// <param name="newHeading">The new heading.</param>
-		public override void UpdatedHeading(CLLocationManager manager, CLHeading newHeading)
-		{
-			if (newHeading.HeadingAccuracy < 0)
-			{
-				return;
-			}
-			if (_bestHeading != null && newHeading.HeadingAccuracy >= _bestHeading.HeadingAccuracy)
-			{
-				return;
-			}
-
-			_bestHeading = newHeading;
-			_position.Heading = newHeading.TrueHeading;
-			_haveHeading = true;
-
-			if (_haveLocation && _position.Accuracy <= _desiredAccuracy)
-			{
-				_tcs.TrySetResult(new Position(_position));
-				StopListening();
-			}
-		}
-
-		/// <summary>
-		/// Stops the listening.
-		/// </summary>
-		private void StopListening()
-		{
-			if (CLLocationManager.HeadingAvailable)
-			{
-				_manager.StopUpdatingHeading();
-			}
-
-			_manager.StopUpdatingLocation();
-		}
-	}
+            StopListening();
+            _timer.Dispose();
+        }
+    }
 }
