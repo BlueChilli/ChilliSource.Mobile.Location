@@ -35,329 +35,289 @@ using System.Threading;
 using System.Threading.Tasks;
 using Android.Locations;
 using Android.OS;
+using ChilliSource.Mobile.Core;
 using Object = Java.Lang.Object;
 
 namespace ChilliSource.Mobile.Location
 {
-	/// <summary>
-	///     Class GeolocationSingleListener.
-	/// </summary>
-	internal class GeolocationSingleListener : Object, ILocationListener
-	{
-		/// <summary>
-		///     The _best location
-		/// </summary>
-		private Android.Locations.Location _bestLocation;
 
-		/// <summary>
-		///     The _active providers
-		/// </summary>
-		private readonly HashSet<string> _activeProviders;
+    internal class GeolocationSingleListener : Object, ILocationListener
+    {
+        private Android.Locations.Location _bestLocation;
 
-		/// <summary>
-		///     The _completion source
-		/// </summary>
-		private readonly TaskCompletionSource<Position> _completionSource = new TaskCompletionSource<Position>();
+        private readonly HashSet<string> _activeProviders;
 
-		/// <summary>
-		///     The _desired accuracy
-		/// </summary>
-		private readonly float _desiredAccuracy;
+        private readonly TaskCompletionSource<OperationResult<Position>> _tcs = new TaskCompletionSource<OperationResult<Position>>();
 
-		/// <summary>
-		///     The _finished callback
-		/// </summary>
-		private readonly Action _finishedCallback;
+        private readonly double _desiredAccuracy;
 
-		/// <summary>
-		///     The _location synchronize
-		/// </summary>
-		private readonly object _locationSync = new object();
+        private readonly Action _finishedCallback;
 
-		/// <summary>
-		///     The _timer
-		/// </summary>
-		private readonly Timer _timer;
+        private readonly object _locationSync = new object();
 
-		/// <summary>
-		///     Initializes a new instance of the <see cref="GeolocationSingleListener" /> class.
-		/// </summary>
-		/// <param name="desiredAccuracy">The desired accuracy.</param>
-		/// <param name="timeout">The timeout.</param>
-		/// <param name="activeProviders">The active providers.</param>
-		/// <param name="finishedCallback">The finished callback.</param>
-		public GeolocationSingleListener(
-			float desiredAccuracy,
-			int timeout,
-			IEnumerable<string> activeProviders,
-			Action finishedCallback)
-		{
-			_desiredAccuracy = desiredAccuracy;
-			_finishedCallback = finishedCallback;
+        private readonly Timer _timer;
 
-			_activeProviders = new HashSet<string>(activeProviders);
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GeolocationSingleListener" /> class.
+        /// </summary>
+        /// <param name="desiredAccuracy">The desired accuracy.</param>
+        /// <param name="timeout">The timeout.</param>
+        /// <param name="activeProviders">The active providers.</param>
+        /// <param name="finishedCallback">The finished callback.</param>
+        public GeolocationSingleListener(double desiredAccuracy, int timeout,
+            IEnumerable<string> activeProviders, Action finishedCallback)
+        {
+            _desiredAccuracy = desiredAccuracy;
+            _finishedCallback = finishedCallback;
 
-			if (timeout != Timeout.Infinite)
-			{
-				_timer = new Timer(TimesUp, null, timeout, 0);
-			}
-		}
+            _activeProviders = new HashSet<string>(activeProviders);
 
-		protected override void Dispose(bool disposing)
-		{
-			if (_timer != null)
-			{
-				_timer.Dispose();
-			}
+            if (timeout != Timeout.Infinite)
+            {
+                _timer = new Timer(TimesUp, null, timeout, 0);
+            }
+        }
 
-			base.Dispose(disposing);
-		}
+        protected override void Dispose(bool disposing)
+        {
+            if (_timer != null)
+            {
+                _timer.Dispose();
+            }
 
-		/// <summary>
-		///     Gets the task.
-		/// </summary>
-		/// <value>The task.</value>
-		public Task<Position> Task
-		{
-			get
-			{
-				return _completionSource.Task;
-			}
-		}
+            base.Dispose(disposing);
+        }
 
-		/// <summary>
-		///     Called when the location has changed.
-		/// </summary>
-		/// <param name="location">The new location, as a Location object.</param>
-		/// <since version="Added in API level 1" />
-		/// <remarks>
-		///     <para tool="javadoc-to-mdoc">
-		///         Called when the location has changed.
-		///     </para>
-		///     <para tool="javadoc-to-mdoc"> There are no restrictions on the use of the supplied Location object.</para>
-		///     <para tool="javadoc-to-mdoc">
-		///         <format type="text/html">
-		///             <a
-		///                 href="http://developer.android.com/reference/android/location/LocationListener.html#onLocationChanged(android.location.Location)"
-		///                 target="_blank">
-		///                 [Android Documentation]
-		///             </a>
-		///         </format>
-		///     </para>
-		/// </remarks>
-		public void OnLocationChanged(Android.Locations.Location location)
-		{
-			if (location.Accuracy <= _desiredAccuracy)
-			{
-				Finish(location);
-				return;
-			}
+        public Task<OperationResult<Position>> Task
+        {
+            get
+            {
+                return _tcs.Task;
+            }
+        }
 
-			lock (_locationSync)
-			{
-				if (_bestLocation == null || location.Accuracy <= _bestLocation.Accuracy)
-				{
-					_bestLocation = location;
-				}
-			}
-		}
+        /// <summary>
+        ///     Called when the location has changed.
+        /// </summary>
+        /// <param name="location">The new location, as a Location object.</param>
+        /// <since version="Added in API level 1" />
+        /// <remarks>
+        ///     <para tool="javadoc-to-mdoc">
+        ///         Called when the location has changed.
+        ///     </para>
+        ///     <para tool="javadoc-to-mdoc"> There are no restrictions on the use of the supplied Location object.</para>
+        ///     <para tool="javadoc-to-mdoc">
+        ///         <format type="text/html">
+        ///             <a
+        ///                 href="http://developer.android.com/reference/android/location/LocationListener.html#onLocationChanged(android.location.Location)"
+        ///                 target="_blank">
+        ///                 [Android Documentation]
+        ///             </a>
+        ///         </format>
+        ///     </para>
+        /// </remarks>
+        public void OnLocationChanged(Android.Locations.Location location)
+        {
+            if (location.Accuracy <= _desiredAccuracy)
+            {
+                Finish(location);
+                return;
+            }
 
-		/// <summary>
-		///     Called when the provider is disabled by the user.
-		/// </summary>
-		/// <param name="provider">
-		///     the name of the location provider associated with this
-		///     update.
-		/// </param>
-		/// <since version="Added in API level 1" />
-		/// <remarks>
-		///     <para tool="javadoc-to-mdoc">
-		///         Called when the provider is disabled by the user. If requestLocationUpdates
-		///         is called on an already disabled provider, this method is called
-		///         immediately.
-		///     </para>
-		///     <para tool="javadoc-to-mdoc">
-		///         <format type="text/html">
-		///             <a
-		///                 href="http://developer.android.com/reference/android/location/LocationListener.html#onProviderDisabled(java.lang.String)"
-		///                 target="_blank">
-		///                 [Android Documentation]
-		///             </a>
-		///         </format>
-		///     </para>
-		/// </remarks>
-		public void OnProviderDisabled(string provider)
-		{
-			lock (_activeProviders)
-			{
-				if (_activeProviders.Remove(provider) && _activeProviders.Count == 0)
-				{
-					_completionSource.TrySetException(new GeolocationException(GeolocationError.PositionUnavailable));
-				}
-			}
-		}
+            lock (_locationSync)
+            {
+                if (_bestLocation == null || location.Accuracy <= _bestLocation.Accuracy)
+                {
+                    _bestLocation = location;
+                }
+            }
+        }
 
-		/// <summary>
-		///     Called when the provider is enabled by the user.
-		/// </summary>
-		/// <param name="provider">
-		///     the name of the location provider associated with this
-		///     update.
-		/// </param>
-		/// <since version="Added in API level 1" />
-		/// <remarks>
-		///     <para tool="javadoc-to-mdoc">Called when the provider is enabled by the user.</para>
-		///     <para tool="javadoc-to-mdoc">
-		///         <format type="text/html">
-		///             <a
-		///                 href="http://developer.android.com/reference/android/location/LocationListener.html#onProviderEnabled(java.lang.String)"
-		///                 target="_blank">
-		///                 [Android Documentation]
-		///             </a>
-		///         </format>
-		///     </para>
-		/// </remarks>
-		public void OnProviderEnabled(string provider)
-		{
-			lock (_activeProviders) _activeProviders.Add(provider);
-		}
+        /// <summary>
+        ///     Called when the provider is disabled by the user.
+        /// </summary>
+        /// <param name="provider">
+        ///     the name of the location provider associated with this
+        ///     update.
+        /// </param>
+        /// <since version="Added in API level 1" />
+        /// <remarks>
+        ///     <para tool="javadoc-to-mdoc">
+        ///         Called when the provider is disabled by the user. If requestLocationUpdates
+        ///         is called on an already disabled provider, this method is called
+        ///         immediately.
+        ///     </para>
+        ///     <para tool="javadoc-to-mdoc">
+        ///         <format type="text/html">
+        ///             <a
+        ///                 href="http://developer.android.com/reference/android/location/LocationListener.html#onProviderDisabled(java.lang.String)"
+        ///                 target="_blank">
+        ///                 [Android Documentation]
+        ///             </a>
+        ///         </format>
+        ///     </para>
+        /// </remarks>
+        public void OnProviderDisabled(string provider)
+        {
+            lock (_activeProviders)
+            {
+                if (_activeProviders.Remove(provider) && _activeProviders.Count == 0)
+                {
+                    _tcs.TrySetException(new LocationException(LocationErrorType.PositionUnavailable));
+                }
+            }
+        }
 
-		/// <summary>
-		///     Called when the provider status changes.
-		/// </summary>
-		/// <param name="provider">
-		///     the name of the location provider associated with this
-		///     update.
-		/// </param>
-		/// <param name="status">
-		///     <c>
-		///         <see cref="F:Android.Locations.Availability.OutOfService" />
-		///     </c>
-		///     if the
-		///     provider is out of service, and this is not expected to change in the
-		///     near future;
-		///     <c>
-		///         <see cref="F:Android.Locations.Availability.TemporarilyUnavailable" />
-		///     </c>
-		///     if
-		///     the provider is temporarily unavailable but is expected to be available
-		///     shortly; and
-		///     <c>
-		///         <see cref="F:Android.Locations.Availability.Available" />
-		///     </c>
-		///     if the
-		///     provider is currently available.
-		/// </param>
-		/// <param name="extras">
-		///     an optional Bundle which will contain provider specific
-		///     status variables.
-		///     <para tool="javadoc-to-mdoc" />
-		///     A number of common key/value pairs for the extras Bundle are listed
-		///     below. Providers that use any of the keys on this list must
-		///     provide the corresponding value as described below.
-		///     <list type="bullet">
-		///         <item>
-		///             <term>
-		///                 satellites - the number of satellites used to derive the fix
-		///             </term>
-		///         </item>
-		///     </list>
-		/// </param>
-		/// <since version="Added in API level 1" />
-		/// <remarks>
-		///     <para tool="javadoc-to-mdoc">
-		///         Called when the provider status changes. This method is called when
-		///         a provider is unable to fetch a location or if the provider has recently
-		///         become available after a period of unavailability.
-		///     </para>
-		///     <para tool="javadoc-to-mdoc">
-		///         <format type="text/html">
-		///             <a
-		///                 href="http://developer.android.com/reference/android/location/LocationListener.html#onStatusChanged(java.lang.String, int, android.os.Bundle)"
-		///                 target="_blank">
-		///                 [Android Documentation]
-		///             </a>
-		///         </format>
-		///     </para>
-		/// </remarks>
-		public void OnStatusChanged(string provider, Availability status, Bundle extras)
-		{
-			switch (status)
-			{
-				case Availability.Available:
-					OnProviderEnabled(provider);
-					break;
+        /// <summary>
+        ///     Called when the provider is enabled by the user.
+        /// </summary>
+        /// <param name="provider">
+        ///     the name of the location provider associated with this
+        ///     update.
+        /// </param>
+        /// <since version="Added in API level 1" />
+        /// <remarks>
+        ///     <para tool="javadoc-to-mdoc">Called when the provider is enabled by the user.</para>
+        ///     <para tool="javadoc-to-mdoc">
+        ///         <format type="text/html">
+        ///             <a
+        ///                 href="http://developer.android.com/reference/android/location/LocationListener.html#onProviderEnabled(java.lang.String)"
+        ///                 target="_blank">
+        ///                 [Android Documentation]
+        ///             </a>
+        ///         </format>
+        ///     </para>
+        /// </remarks>
+        public void OnProviderEnabled(string provider)
+        {
+            lock (_activeProviders) _activeProviders.Add(provider);
+        }
 
-				case Availability.OutOfService:
-					OnProviderDisabled(provider);
-					break;
-			}
-		}
+        /// <summary>
+        ///     Called when the provider status changes.
+        /// </summary>
+        /// <param name="provider">
+        ///     the name of the location provider associated with this
+        ///     update.
+        /// </param>
+        /// <param name="status">
+        ///     <c>
+        ///         <see cref="F:Android.Locations.Availability.OutOfService" />
+        ///     </c>
+        ///     if the
+        ///     provider is out of service, and this is not expected to change in the
+        ///     near future;
+        ///     <c>
+        ///         <see cref="F:Android.Locations.Availability.TemporarilyUnavailable" />
+        ///     </c>
+        ///     if
+        ///     the provider is temporarily unavailable but is expected to be available
+        ///     shortly; and
+        ///     <c>
+        ///         <see cref="F:Android.Locations.Availability.Available" />
+        ///     </c>
+        ///     if the
+        ///     provider is currently available.
+        /// </param>
+        /// <param name="extras">
+        ///     an optional Bundle which will contain provider specific
+        ///     status variables.
+        ///     <para tool="javadoc-to-mdoc" />
+        ///     A number of common key/value pairs for the extras Bundle are listed
+        ///     below. Providers that use any of the keys on this list must
+        ///     provide the corresponding value as described below.
+        ///     <list type="bullet">
+        ///         <item>
+        ///             <term>
+        ///                 satellites - the number of satellites used to derive the fix
+        ///             </term>
+        ///         </item>
+        ///     </list>
+        /// </param>
+        /// <since version="Added in API level 1" />
+        /// <remarks>
+        ///     <para tool="javadoc-to-mdoc">
+        ///         Called when the provider status changes. This method is called when
+        ///         a provider is unable to fetch a location or if the provider has recently
+        ///         become available after a period of unavailability.
+        ///     </para>
+        ///     <para tool="javadoc-to-mdoc">
+        ///         <format type="text/html">
+        ///             <a
+        ///                 href="http://developer.android.com/reference/android/location/LocationListener.html#onStatusChanged(java.lang.String, int, android.os.Bundle)"
+        ///                 target="_blank">
+        ///                 [Android Documentation]
+        ///             </a>
+        ///         </format>
+        ///     </para>
+        /// </remarks>
+        public void OnStatusChanged(string provider, Availability status, Bundle extras)
+        {
+            switch (status)
+            {
+                case Availability.Available:
+                    {
+                        OnProviderEnabled(provider);
+                        break;
+                    }
+                case Availability.OutOfService:
+                    {
+                        OnProviderDisabled(provider);
+                        break;
+                    }
+            }
+        }
 
-		/// <summary>
-		///     Cancels this instance.
-		/// </summary>
-		public void Cancel()
-		{
-			_completionSource.TrySetCanceled();
-		}
+        public void Cancel()
+        {
+            _tcs.TrySetCanceled();
+        }
 
-		/// <summary>
-		///     Timeses up.
-		/// </summary>
-		/// <param name="state">The state.</param>
-		private void TimesUp(object state)
-		{
-			lock (_locationSync)
-			{
-				if (_bestLocation == null)
-				{
-					if (_completionSource.TrySetCanceled() && _finishedCallback != null)
-					{
-						_finishedCallback();
-					}
-				}
-				else
-				{
-					Finish(_bestLocation);
-				}
-			}
-		}
+        private void TimesUp(object state)
+        {
+            lock (_locationSync)
+            {
+                if (_bestLocation == null)
+                {
+                    if (_tcs.TrySetCanceled() && _finishedCallback != null)
+                    {
+                        _finishedCallback();
+                    }
+                }
+                else
+                {
+                    Finish(_bestLocation);
+                }
+            }
+        }
 
-		/// <summary>
-		///     Finishes the specified location.
-		/// </summary>
-		/// <param name="location">The location.</param>
-		private void Finish(Android.Locations.Location location)
-		{
-			var p = new Position();
-			if (location.HasAccuracy)
-			{
-				p.Accuracy = location.Accuracy;
-			}
-			if (location.HasAltitude)
-			{
-				p.Altitude = location.Altitude;
-			}
-			if (location.HasBearing)
-			{
-				p.Heading = location.Bearing;
-			}
-			if (location.HasSpeed)
-			{
-				p.Speed = location.Speed;
-			}
+        private void Finish(Android.Locations.Location location)
+        {
+            var position = new Position();
+            if (location.HasAccuracy)
+            {
+                position.Accuracy = location.Accuracy;
+            }
+            if (location.HasAltitude)
+            {
+                position.Altitude = location.Altitude;
+            }
+            if (location.HasBearing)
+            {
+                position.Heading = location.Bearing;
+            }
+            if (location.HasSpeed)
+            {
+                position.Speed = location.Speed;
+            }
 
-			p.Longitude = location.Longitude;
-			p.Latitude = location.Latitude;
-			p.Timestamp = LocationService.GetTimestamp(location);
+            position.Longitude = location.Longitude;
+            position.Latitude = location.Latitude;
+            position.Timestamp = LocationService.GetTimestamp(location);
 
-			if (_finishedCallback != null)
-			{
-				_finishedCallback();
-			}
+            _finishedCallback?.Invoke();
 
-			_completionSource.TrySetResult(p);
-		}
-	}
+            _tcs.TrySetResult(OperationResult<Position>.AsSuccess(position));
+        }
+    }
 }
