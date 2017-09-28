@@ -465,11 +465,10 @@ Task("PublishRelease")
 //////////////////////////////////////////////////////////////////////
 // TASK TARGETS
 //////////////////////////////////////////////////////////////////////
-
 Task("Default")
-    .IsDependentOn("CreateRelease")
-    .IsDependentOn("PublishPackages")
-    .IsDependentOn("PublishRelease")
+	.IsDependentOn("CreateRelease")
+	.IsDependentOn("PublishPackages")
+	.IsDependentOn("PublishRelease")
     .Does (() =>
 {
 
