@@ -283,7 +283,6 @@ Task("Build")
 	WriteErrorLog("Build failed", "Build", exception);
 });
 
-
 Task("AddLicense")
 	.WithCriteria(() => shouldAddLicenseHeader)
 	.Does(() =>{
@@ -465,6 +464,7 @@ Task("PublishRelease")
 //////////////////////////////////////////////////////////////////////
 // TASK TARGETS
 //////////////////////////////////////////////////////////////////////
+
 
 Task("Default")
 	.IsDependentOn("CreateRelease")
