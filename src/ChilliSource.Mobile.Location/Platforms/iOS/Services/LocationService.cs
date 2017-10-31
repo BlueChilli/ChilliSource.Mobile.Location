@@ -383,6 +383,19 @@ namespace ChilliSource.Mobile.Location
             return OperationResult<double>.AsSuccess(referenceLocation.DistanceFrom(currentLocation));
         }
 
+        public OperationResult<double> GetDistanceBetween(Position firstPosition, Position secondPosition)
+        {
+            if (firstPosition == null || secondPosition == null)
+            {
+                return OperationResult<double>.AsFailure("Invalid positions specified");
+            }
+
+            var firstLocation = new CLLocation(firstPosition.Latitude, firstPosition.Longitude);
+            var secondLocation = new CLLocation(secondPosition.Latitude, secondPosition.Longitude);
+
+            return OperationResult<double>.AsSuccess(firstLocation.DistanceFrom(secondLocation));
+        }
+
         #endregion
 
         #region Event Handlers
