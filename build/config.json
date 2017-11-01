@@ -4,7 +4,7 @@
 	"githubOwner": "BlueChilli",
 	"githubRepository": "ChilliSource.Mobile.Location",
 	"packageWhiteList": ["ChilliSource.Mobile.Location"],
-	"solutionFile" : "../src/ChilliSource.Mobile.Location.VS2017.sln",
+	"solutionFile" : "../src/ChilliSource.Mobile.Location.sln",
 	"tags": [ "ChilliSource", "ChilliSource-Mobile-Location", "ChilliSource-Mobile"],
 	"authors" : ["Blue Chilli Technology Pty Ltd"],
 	"copyright" : "Copyright Blue Chilli Technology Pty Ltd 2017",
