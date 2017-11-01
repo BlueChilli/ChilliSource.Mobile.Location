@@ -397,6 +397,34 @@ namespace ChilliSource.Mobile.Location
             }
         }
 
+        public OperationResult<double> GetDistanceBetween(Position firstPosition, Position secondPosition)
+        {
+            if (firstPosition == null || secondPosition == null)
+            {
+                return OperationResult<double>.AsFailure("Invalid positions specified");
+            }
+                      
+            float[] results = new float[1];
+            try
+            {
+                Android.Locations.Location.DistanceBetween(firstPosition.Latitude, firstPosition.Longitude,
+                                                           secondPosition.Latitude, secondPosition.Longitude, results);
+            }
+            catch (IllegalArgumentException e)
+            {
+                return OperationResult<double>.AsFailure(e);
+            }
+
+            if (results != null && results.Length > 0)
+            {
+                return OperationResult<double>.AsSuccess(results[0]);
+            }
+            else
+            {
+                return OperationResult<double>.AsFailure("Could not calculate distance");
+            }
+        }
+
         #endregion
 
         #region Event Handlers
