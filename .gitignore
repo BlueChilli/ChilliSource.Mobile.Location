@@ -2,9 +2,6 @@
 */bin
 */**/obj*
 */**/bin
-*/**/Resource.designer.cs
-*/**/**/Resource.designer.cs
-*Droid/Resources/*.cs
 Components
 Packages
 **/*.orig
@@ -17,4 +14,5 @@ Packages
 TestResult.xml
 build/artifacts/
 build/tools/
+!build/tools/packages.config
 *.orig
