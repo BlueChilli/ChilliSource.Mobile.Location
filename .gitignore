@@ -1,6 +1,6 @@
-*/obj*
+*/obj
 */bin
-*/**/obj*
+*/**/obj
 */**/bin
 */**/Resource.designer.cs
 */**/**/Resource.designer.cs
@@ -17,4 +17,6 @@ Packages
 TestResult.xml
 build/artifacts/
 build/tools/
+!build/tools/packages.config
 *.orig
+.vs
