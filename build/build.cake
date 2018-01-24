@@ -485,10 +485,6 @@ Task("PublishRelease")
 // TASK TARGETS
 //////////////////////////////////////////////////////////////////////
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 7cfd7dbe54fb9b09a09ed42a646163888370cf80
 Task("Default")
 	.IsDependentOn("CreateRelease")
 	.IsDependentOn("PublishPackages")
