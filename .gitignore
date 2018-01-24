@@ -1,7 +1,10 @@
-*/obj*
+*/obj
 */bin
-*/**/obj*
+*/**/obj
 */**/bin
+*/**/Resource.designer.cs
+*/**/**/Resource.designer.cs
+*Droid/Resources/*.cs
 Components
 Packages
 **/*.orig
@@ -16,3 +19,4 @@ build/artifacts/
 build/tools/
 !build/tools/packages.config
 *.orig
+.vs
