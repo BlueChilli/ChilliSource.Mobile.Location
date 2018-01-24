@@ -194,5 +194,13 @@ namespace ChilliSource.Mobile.Location
         /// <returns>The distance from.</returns>
         /// <param name="referencePosition">Reference position.</param>
         OperationResult<double> GetDistanceFrom(Position referencePosition);
+
+
+        /// <summary>
+        /// Calculates the distance between the two specified positions.
+        /// </summary>
+        /// <param name="firstPosition">First position.</param>
+        /// <param name="secondPosition">Second position.</param>
+        OperationResult<double> GetDistanceBetween(Position firstPosition, Position secondPosition);
     }
 }
