@@ -15,10 +15,10 @@ namespace ChilliSource.Mobile.Location
     /// The three types of location monitoring permissions
     /// </summary>
 	public enum LocationAuthorizationType
-	{
-		None,
-		Always,
-		WhenInUse
-	}
+    {
+        None,
+        Always,
+        WhenInUse
+    }
 
 }

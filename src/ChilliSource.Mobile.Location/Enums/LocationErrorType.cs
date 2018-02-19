@@ -14,16 +14,16 @@ namespace ChilliSource.Mobile.Location
     /// <summary>
     /// Represents common error scenarios when retrieving location data
     /// </summary>
-	public enum GeolocationError
-	{
-		/// <summary>
-		/// The provider was unable to retrieve any position data.
-		/// </summary>
-		PositionUnavailable,
+	public enum LocationErrorType
+    {
+        /// <summary>
+        /// The provider was unable to retrieve any position data.
+        /// </summary>
+        PositionUnavailable,
 
-		/// <summary>
-		/// The app is not, or no longer, authorized to receive location data.
-		/// </summary>
-		Unauthorized
-	}
+        /// <summary>
+        /// The app is not, or no longer, authorized to receive location data.
+        /// </summary>
+        Unauthorized
+    }
 }

@@ -1,9 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;Xamarin.iOS10;MonoAndroid70;net462</TargetFrameworks>
-    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-    <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8+wpa81+wp8</PackageTargetFallback>
+    <TargetFrameworks>netstandard2.0;Xamarin.iOS10;MonoAndroid70;net462</TargetFrameworks>
+    <NetStandardImplicitPackageVersion>2.0.0</NetStandardImplicitPackageVersion>
     <PackageId>ChilliSource.Mobile.Location</PackageId>
     <Product>Blue Chilli Technology</Product>
     <Description>Location library for ChilliSource.Mobile</Description>
@@ -28,7 +27,6 @@
   
   <PropertyGroup Condition="'$(TargetFramework)' == 'MonoAndroid70'">
     <TargetFrameworkIdentifier>MonoAndroid</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v7.0</TargetFrameworkVersion>
     <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
     <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
     <AndroidUseLatestPlatformSdk>true</AndroidUseLatestPlatformSdk>
@@ -58,8 +56,8 @@
     <None Remove="Platforms\iOS\ChilliSource.Mobile.UI.Location.iOS.csproj" />
     <None Remove="Platforms\iOS\packages.config" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|netstandard1.6|AnyCPU'">
-    <DocumentationFile>bin\Release\netstandard1.6\ChilliSource.Mobile.Location.xml</DocumentationFile>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard2.0\ChilliSource.Mobile.Location.xml</DocumentationFile>
     <NoWarn></NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Xamarin.iOS10|AnyCPU'">
@@ -114,11 +112,15 @@
     <Compile Include="Platforms\Android\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ChilliSource.Mobile.Core" Version="1.0.1" />
+    <PackageReference Include="ChilliSource.Mobile.Core" Version="2.0.0" />
     <PackageReference Include="Humanizer.Core" Version="2.2.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
-    <PackageReference Include="Xamarin.Forms" Version="2.3.4.247" />
-    <PackageReference Include="Xamarin.Forms.Maps" Version="2.3.4.247" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
+    <PackageReference Include="Xamarin.Forms" Version="2.5.0.280555" />
+    <PackageReference Include="Xamarin.Forms.Maps" Version="2.5.0.280555" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="MSBuild.Sdk.Extras" Version="1.2.1" />
+    <PackageReference Update="SourceLink.Create.CommandLine" Version="2.8.0" />
   </ItemGroup>
 
   <Import Project="$(MSBuildSDKExtrasTargets)" Condition="Exists('$(MSBuildSDKExtrasTargets)')" />
