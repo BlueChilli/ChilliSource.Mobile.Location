@@ -356,6 +356,7 @@ Task("AddLicense")
 var testProject = config.Value<string>("testProjectPath");
 Task("RunUnitTests")
     .IsDependentOn("Build")
+	.WithCriteria(() => runUnitTests)
     .Does(() =>
 {
 	Information("Running Unit Tests for {0}", buildSolution);
