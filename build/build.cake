@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 // ADDINS
 //////////////////////////////////////////////////////////////////////
 
+#addin "Cake.Incubator"
 #addin nuget:?package=Newtonsoft.Json
 //////////////////////////////////////////////////////////////////////
 // TOOLS
@@ -13,7 +14,6 @@ using System.Text.RegularExpressions;
 #tool "GitReleaseManager"
 #tool "GitVersion.CommandLine"
 #tool "GitLink"
-#tool "nuget:?package=xunit.runner.console"
 #tool nuget:?package=vswhere
 
 using Cake.Common.Build.TeamCity;
@@ -90,6 +90,7 @@ var isTagged = !String.IsNullOrEmpty(branch) && branch.ToLower().Contains("refs/
 var buildConfName = EnvironmentVariable("TEAMCITY_BUILDCONF_NAME"); //teamCity.Environment.Build.BuildConfName
 var buildNumber = GetEnvironmentInteger("BUILD_NUMBER");
 var isReleaseBranch = StringComparer.OrdinalIgnoreCase.Equals("master", buildConfName)|| StringComparer.OrdinalIgnoreCase.Equals("release", buildConfName);
+var configuration = "Release";
 
 var shouldAddLicenseHeader = false;
 if(!string.IsNullOrEmpty(EnvironmentVariable("ShouldAddLicenseHeader"))) {
@@ -195,29 +196,61 @@ Func<string, IDisposable> Block = message => {
 	return null;
 };
 
-Action<string,string> build = (solution, configuration) =>
+Func<FilePath> GetMsBuildPath = () => {
+
+	FilePath msBuildPath = null;
+
+	if(isRunningOnWindows) {
+		msBuildPath =  VSWhereLatest().CombineWithFilePath("./MSBuild/15.0/Bin/MSBuild.exe");
+	}
+
+	return msBuildPath;
+};
+
+Action<string> buildTest = (proj) =>
+{
+    Information("Building {0}", proj);
+	using(BuildBlock("Building Test")) 
+	{			
+  		var msBuildPath = GetMsBuildPath();
+		Information("MSBuild: {0}", msBuildPath);
+		
+    	MSBuild(proj, settings => {
+			settings
+			.SetConfiguration(configuration);
+			
+			if(isRunningOnWindows) {
+				settings.ToolPath = msBuildPath;
+			}
+
+			settings
+			.SetVerbosity(Verbosity.Minimal)
+			.SetNodeReuse(false);
+		});
+    };		
+
+};
+
+
+Action<string> build = (solution) =>
 {
     Information("Building {0}", solution);
 	using(BuildBlock("Build")) 
 	{			
-  		FilePath msBuildPath = null;
-
-		if(isRunningOnWindows) {
-		   msBuildPath = VSWhereLatest().CombineWithFilePath("./MSBuild/15.0/Bin/MSBuild.exe");
-		}  
-
-  		Information("{0}", msBuildPath);
-  		
+  		var msBuildPath = GetMsBuildPath();
+	
+		Information("MSBuild: {0}", msBuildPath);
+		
     	MSBuild(solution, settings => {
 			settings
 			.SetConfiguration(configuration);
-
+			
 			if(isRunningOnWindows) {
 				settings.ToolPath = msBuildPath;
 			}
 
 			settings.WithTarget("restore;pack");
-			
+	
 			settings
 			.WithProperty("SourceLinkEnabled",  isCI)
 			.WithProperty("PackageOutputPath",  MakeAbsolute(Directory(artifactDirectory)).ToString())
@@ -246,7 +279,6 @@ Action<string,string> build = (solution, configuration) =>
     };		
 
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // SETUP / TEARDOWN
@@ -297,7 +329,7 @@ Task("Build")
 	.IsDependentOn("AddLicense")
     .Does (() =>
 {
-    build(buildSolution, "Release");
+    build(buildSolution);
 })
 .OnError(exception => {
 	WriteErrorLog("Build failed", "Build", exception);
@@ -321,19 +353,25 @@ Task("AddLicense")
 
 
 
-var testProjectDll = config.Value<string>("testProjectDll");
+var testProject = config.Value<string>("testProjectPath");
 Task("RunUnitTests")
     .IsDependentOn("Build")
-    .WithCriteria(() => runUnitTests)
     .Does(() =>
 {
 	Information("Running Unit Tests for {0}", buildSolution);
 	using(BuildBlock("RunUnitTests")) 
 	{
-		XUnit2(testProjectDll, new XUnit2Settings {
+		buildTest(testProject);
+
+		var settings = new DotNetCoreTestSettings
+		{
+			Configuration = configuration,
+			NoBuild = true
+		};
+
+		DotNetCoreTest(settings, testProject,  new XUnit2Settings {
 			OutputDirectory = artifactDirectory,
-            XmlReportV1 = false,
-            NoAppDomain = true
+            XmlReportV1 = false
 		});
 	};
 });
