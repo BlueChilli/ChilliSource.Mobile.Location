@@ -122,6 +122,8 @@
     <PackageReference Update="MSBuild.Sdk.Extras" Version="1.2.1" />
     <PackageReference Update="SourceLink.Create.CommandLine" Version="2.8.0" />
   </ItemGroup>
-
+  <ItemGroup>
+    <Folder Include="Google\Places\Models\ReverseGeocoding\" />
+  </ItemGroup>
   <Import Project="$(MSBuildSDKExtrasTargets)" Condition="Exists('$(MSBuildSDKExtrasTargets)')" />
 </Project>

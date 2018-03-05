@@ -108,7 +108,7 @@ namespace ChilliSource.Mobile.Location.Google.Places
 		{
             if (string.IsNullOrWhiteSpace(searchString))
             {
-                return OperationResult<PlaceResponse>.AsFailure("PlaceId cannot be empty");
+                return OperationResult<PlaceResponse>.AsFailure("Search string cannot be empty");
             }
 
 			var url = _urlFactory.BuildSearchUrl(searchString, request);
@@ -167,5 +167,33 @@ namespace ChilliSource.Mobile.Location.Google.Places
                 return OperationResult<DetailsResponse>.AsSuccess(detailsResult);
             }
 		}
+
+        /// <summary>
+        /// Queries Google's reverse geocoding service to return a list of addresses that are closest to the specified 
+        /// <paramref name="latitude"/> and <paramref name="longitude"/>
+        /// </summary>
+        /// <returns>The addresses.</returns>
+        /// <param name="latitude">Latitude.</param>
+        /// <param name="longitude">Longitude.</param>
+        public async Task<OperationResult<ReverseGeocodingResponse>> GetAddresses(double latitude, double longitude)
+        {            
+            var url = _urlFactory.BuildReverseGeocodingUrl(latitude, longitude);
+
+            using (var client = new HttpClient())
+            {
+                AcceptJsonResponse(client);
+
+                var response = await client.GetAsync(url).ConfigureAwait(false);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return OperationResult<ReverseGeocodingResponse>.AsFailure(response.ReasonPhrase);
+                }
+
+                var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var result = JsonConvert.DeserializeObject<ReverseGeocodingResponse>(content);
+                return OperationResult<ReverseGeocodingResponse>.AsSuccess(result);
+            }
+        }
 	}
 }
