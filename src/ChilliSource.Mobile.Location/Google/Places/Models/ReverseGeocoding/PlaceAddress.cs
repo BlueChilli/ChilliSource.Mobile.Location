@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace ChilliSource.Mobile.Location.Google.Places
 {
-    public class Address
+    public class PlaceAddress
     {
         /// <summary>
         /// The full address as a text string

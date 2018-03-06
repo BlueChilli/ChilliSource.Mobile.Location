@@ -11,7 +11,7 @@ namespace ChilliSource.Mobile.Location.Google.Places
         /// The addresses nearby the specified coordinates
         /// </summary>
         [JsonProperty("results")]
-        public IEnumerable<Address> Addresses { get; set; }
+        public IEnumerable<PlaceAddress> Addresses { get; set; }
 
 
         /// <summary>
