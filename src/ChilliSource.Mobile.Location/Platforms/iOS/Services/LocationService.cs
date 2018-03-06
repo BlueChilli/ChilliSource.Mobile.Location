@@ -89,11 +89,11 @@ namespace ChilliSource.Mobile.Location
 
         public event EventHandler<PositionEventArgs> PositionChanged;
 
-        public event EventHandler<RegionEventArgs> OnRegionEntered;
+        public event EventHandler<RegionEventArgs> RegionEntered;
 
-        public event EventHandler<RegionEventArgs> OnRegionLeft;
+        public event EventHandler<RegionEventArgs> RegionLeft;
 
-        public event EventHandler<AuthorizationEventArgs> OnLocationAuthorizationChanged;
+        public event EventHandler<AuthorizationEventArgs> LocationAuthorizationChanged;
 
         #endregion
 
@@ -438,17 +438,17 @@ namespace ChilliSource.Mobile.Location
         {
             if (e.Status == CLAuthorizationStatus.Denied || e.Status == CLAuthorizationStatus.Restricted)
             {
-                OnLocationAuthorizationChanged(this, new AuthorizationEventArgs(LocationAuthorizationType.None));
+                LocationAuthorizationChanged?.Invoke(this, new AuthorizationEventArgs(LocationAuthorizationType.None));
 
                 OnPositionError(new PositionErrorEventArgs(LocationErrorType.Unauthorized));
             }
             else if (e.Status == CLAuthorizationStatus.AuthorizedAlways)
             {
-                OnLocationAuthorizationChanged(this, new AuthorizationEventArgs(LocationAuthorizationType.Always));
+                LocationAuthorizationChanged?.Invoke(this, new AuthorizationEventArgs(LocationAuthorizationType.Always));
             }
             else if (e.Status == CLAuthorizationStatus.AuthorizedWhenInUse)
             {
-                OnLocationAuthorizationChanged(this, new AuthorizationEventArgs(LocationAuthorizationType.WhenInUse));
+                LocationAuthorizationChanged?.Invoke(this, new AuthorizationEventArgs(LocationAuthorizationType.WhenInUse));
             }
         }
 
@@ -478,7 +478,7 @@ namespace ChilliSource.Mobile.Location
             nint taskID = UIApplication.SharedApplication.BeginBackgroundTask(() => { });
 
             _logger?.Information($"iOS: Region entered {e.Region.Identifier}");
-            OnRegionEntered?.Invoke(this, new RegionEventArgs(e.Region.Identifier));
+            RegionEntered?.Invoke(this, new RegionEventArgs(e.Region.Identifier));
 
             UIApplication.SharedApplication.EndBackgroundTask(taskID);
         }
@@ -488,7 +488,7 @@ namespace ChilliSource.Mobile.Location
             nint taskID = UIApplication.SharedApplication.BeginBackgroundTask(() => { });
 
             _logger?.Information($"iOS: Region left {e.Region.Identifier}");
-            OnRegionLeft?.Invoke(this, new RegionEventArgs(e.Region.Identifier));
+            RegionLeft?.Invoke(this, new RegionEventArgs(e.Region.Identifier));
 
             UIApplication.SharedApplication.EndBackgroundTask(taskID);
 

@@ -123,11 +123,11 @@ namespace ChilliSource.Mobile.Location
 
 #pragma warning disable CS0067
 
-        public event EventHandler<RegionEventArgs> OnRegionEntered;
+        public event EventHandler<RegionEventArgs> RegionEntered;
 
-        public event EventHandler<RegionEventArgs> OnRegionLeft;
+        public event EventHandler<RegionEventArgs> RegionLeft;
 
-        public event EventHandler<AuthorizationEventArgs> OnLocationAuthorizationChanged;
+        public event EventHandler<AuthorizationEventArgs> LocationAuthorizationChanged;
 
 #pragma warning restore CS0067
 
