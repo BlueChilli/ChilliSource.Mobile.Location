@@ -47,18 +47,6 @@
     <Compile Remove="Resources\**" />
     <None Include="Platforms\**" />
     <None Include="Resources\**" />
-    <Compile Remove="obj_android\**" />
-    <Compile Remove="obj_ios\**" />
-    <None Remove="obj_android\**" />
-    <None Remove="obj_ios\**" />
-    <None Remove="ChilliSource.Mobile.Location.projitems" />
-    <None Remove="ChilliSource.Mobile.UI.Core.projitems" />
-    <None Remove="packages.ChilliSource.Mobile.Location.Droid.config" />
-    <None Remove="packages.ChilliSource.Mobile.Location.iOS.config" />
-    <None Remove="Platforms\Android\ChilliSource.Mobile.Location.Droid.csproj" />
-    <None Remove="Platforms\Android\packages.config" />
-    <None Remove="Platforms\iOS\ChilliSource.Mobile.UI.Location.iOS.csproj" />
-    <None Remove="Platforms\iOS\packages.config" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net462'">
     <Reference Include="System" />
