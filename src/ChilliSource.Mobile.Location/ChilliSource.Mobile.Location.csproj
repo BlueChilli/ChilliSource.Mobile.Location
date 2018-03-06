@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;Xamarin.iOS10;MonoAndroid70;net462</TargetFrameworks>
-    <NetStandardImplicitPackageVersion>2.0.0</NetStandardImplicitPackageVersion>
+    <TargetFrameworks>netstandard1.6;netstandard2.0;Xamarin.iOS10;MonoAndroid44;net462</TargetFrameworks>
     <PackageId>ChilliSource.Mobile.Location</PackageId>
     <Product>Blue Chilli Technology</Product>
     <Description>Location library for ChilliSource.Mobile</Description>
@@ -16,6 +15,11 @@
     <RootNamespace>ChilliSource.Mobile.Location</RootNamespace>
     <AssemblyName>ChilliSource.Mobile.Location</AssemblyName>
     <DebugType>full</DebugType>
+    <GenerateDocumentationFile Condition=" '$(Configuration)' == 'Release' ">true</GenerateDocumentationFile>
+    <Product>$(AssemblyName) ($(TargetFramework))</Product>
+    <LangVersion>default</LangVersion>
+    <DefineConstants>$(DefineConstants);</DefineConstants>
+    <IsTestProject>$(MSBuildProjectName.Contains('Tests'))</IsTestProject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'Xamarin.iOS10'">
@@ -25,7 +29,7 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(TargetFramework)' == 'MonoAndroid70'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'MonoAndroid44'">
     <TargetFrameworkIdentifier>MonoAndroid</TargetFrameworkIdentifier>
     <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
     <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
@@ -56,22 +60,6 @@
     <None Remove="Platforms\iOS\ChilliSource.Mobile.UI.Location.iOS.csproj" />
     <None Remove="Platforms\iOS\packages.config" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
-    <DocumentationFile>bin\Release\netstandard2.0\ChilliSource.Mobile.Location.xml</DocumentationFile>
-    <NoWarn></NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Xamarin.iOS10|AnyCPU'">
-    <DocumentationFile>bin\Release\Xamarin.iOS10\ChilliSource.Mobile.Location.xml</DocumentationFile>
-    <NoWarn></NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|MonoAndroid70|AnyCPU'">
-    <DocumentationFile>bin\Release\MonoAndroid60\ChilliSource.Mobile.Location.xml</DocumentationFile>
-    <NoWarn></NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|net462|AnyCPU'">
-    <DocumentationFile>bin\Release\net462\ChilliSource.Mobile.Location.xml</DocumentationFile>
-    <NoWarn></NoWarn>
-  </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net462'">
     <Reference Include="System" />
     <Reference Include="System.Runtime" />
@@ -95,7 +83,7 @@
     <Reference Include="System.Runtime.Serialization" />
     <Compile Include="Platforms\iOS\**\*.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'MonoAndroid70'">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'MonoAndroid44'">
     <Reference Include="Mono.Android" />
     <Reference Include="System" />
     <Reference Include="System.Collections" />
@@ -112,7 +100,7 @@
     <Compile Include="Platforms\Android\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ChilliSource.Mobile.Core" Version="2.0.0" />
+    <PackageReference Include="ChilliSource.Mobile.Core" Version="2.0.1" />
     <PackageReference Include="Humanizer.Core" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
     <PackageReference Include="Xamarin.Forms" Version="2.5.0.280555" />
