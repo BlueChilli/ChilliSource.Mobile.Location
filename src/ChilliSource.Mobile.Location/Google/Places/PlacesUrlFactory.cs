@@ -18,8 +18,9 @@ namespace ChilliSource.Mobile.Location.Google.Places
 	/// </summary>
 	internal class PlacesUrlFactory
 	{
-		private static string _baseURL = "https://maps.googleapis.com/maps/api/place/autocomplete/json?key=";
-	    private static string _baseDetailUrl = "https://maps.googleapis.com/maps/api/place/details/json?key=";
+        private static string _autocompleteUrl = "https://maps.googleapis.com/maps/api/place/autocomplete/json?key=";
+        private static string _placeDetailUrl = "https://maps.googleapis.com/maps/api/place/details/json?key=";
+        private static string _reverseGeoCodingUrl = "https://maps.googleapis.com/maps/api/geocode/json?latlng={0},{1}&key={2}";
 
         private readonly string _apiKey;
 		private readonly string _language;
@@ -39,7 +40,7 @@ namespace ChilliSource.Mobile.Location.Google.Places
         public Uri BuildSearchUrl(string searchString, AutocompleteRequest request)
 		{
 			var url = new StringBuilder();
-			url.Append($"{_baseURL}{_apiKey}");
+			url.Append($"{_autocompleteUrl}{_apiKey}");
 			url.Append($"&input={searchString}");
 
 			if (!string.IsNullOrWhiteSpace(_language))
@@ -77,7 +78,7 @@ namespace ChilliSource.Mobile.Location.Google.Places
 		public Uri BuildDetailsUrl(string placeId)
 		{
 			var url = new StringBuilder();
-			url.Append($"{_baseDetailUrl}{_apiKey}");
+			url.Append($"{_placeDetailUrl}{_apiKey}");
 			url.Append($"&placeid={placeId}");
 
 			if (!string.IsNullOrWhiteSpace(_language))
@@ -87,5 +88,18 @@ namespace ChilliSource.Mobile.Location.Google.Places
 
 			return new Uri(url.ToString());
 		}
+
+        public Uri BuildReverseGeocodingUrl(double latitude, double longitude)
+        {
+            var url = new StringBuilder();
+            url.Append(string.Format(_reverseGeoCodingUrl,latitude, longitude, _apiKey));
+
+            if (!string.IsNullOrWhiteSpace(_language))
+            {
+                url.Append($"&language={_language}");
+            }
+
+            return new Uri(url.ToString());
+        }
 	}
 }
