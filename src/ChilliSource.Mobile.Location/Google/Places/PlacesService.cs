@@ -141,14 +141,14 @@ namespace ChilliSource.Mobile.Location.Google.Places
         /// <param name="prediction">Search prediction</param>
         /// <returns>The place details</returns>
         /// </summary>
-        public async Task<OperationResult<DetailsResponse>> GetPlaceDetails(Prediction prediction)
+        public async Task<OperationResult<DetailsResponse>> GetPlaceDetails(string placeId)
 		{
-            if (string.IsNullOrWhiteSpace(prediction.PlaceId))
+            if (string.IsNullOrWhiteSpace(placeId))
             {
                 return OperationResult<DetailsResponse>.AsFailure("PlaceId cannot be empty");
             }
 
-			var url = _urlFactory.BuildDetailsUrl(prediction.PlaceId);
+			var url = _urlFactory.BuildDetailsUrl(placeId);
 
 			using (var client = new HttpClient())
 			{
@@ -168,12 +168,7 @@ namespace ChilliSource.Mobile.Location.Google.Places
                 {
                     return OperationResult<DetailsResponse>.AsFailure(detailsResult.ErrorMessage);
                 }
-
-                if (detailsResult.Result.Prediction != null)
-			    {
-			        detailsResult.Result.Prediction = prediction.Description;
-                }
-
+                
                 return OperationResult<DetailsResponse>.AsSuccess(detailsResult);
             }
 		}

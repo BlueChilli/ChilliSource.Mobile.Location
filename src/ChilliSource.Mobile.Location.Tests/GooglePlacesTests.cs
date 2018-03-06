@@ -26,11 +26,11 @@ namespace ChilliSource.Mobile.Location.Tests
         [InlineData("David Jones")]
         public async Task SearchAsync_ShouldBeAbleToSearchPlaces(string searchData)
         {
-            var r = await fixture.SearchAsync(searchData);
+            var result = await fixture.SearchAsync(searchData);
 
-            Assert.NotNull(r);
-            Assert.True(r.IsSuccessful);
-            Assert.Equal(GoogleApiResponseStatus.Ok, r.Result.Status);
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccessful);
+            Assert.Equal(GoogleApiResponseStatus.Ok, result.Result.Status);
         }
 
         [Theory(Skip = "Populate the api key above from google and enable this test")]
@@ -39,11 +39,11 @@ namespace ChilliSource.Mobile.Location.Tests
         [InlineData("52 York St Sydney NSW")]
         public async Task AutocompleteAsync_ShouldGetAutocompleteThePlaces(string searchData)
         {
-            var r = await fixture.AutocompleteAsync(searchData);
+            var result = await fixture.AutocompleteAsync(searchData);
 
-            Assert.NotNull(r);
-            Assert.True(r.IsSuccessful);
-            Assert.Equal(GoogleApiResponseStatus.Ok, r.Result.Status);
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccessful);
+            Assert.Equal(GoogleApiResponseStatus.Ok, result.Result.Status);
         }
 
         [Theory(Skip = "Populate the api key above from google and enable this test")]
@@ -52,14 +52,11 @@ namespace ChilliSource.Mobile.Location.Tests
         [InlineData("ChIJj61dQgK6j4AR4GeTYWZsKWw")]
         public async Task GetPlaceDetails_ShouldGetPlaceDetails(string placeId)
         {
-            var r = await fixture.GetPlaceDetails(new Prediction()
-            {
-                PlaceId = placeId
-            });
+            var result = await fixture.GetPlaceDetails(placeId);
 
-            Assert.NotNull(r);
-            Assert.True(r.IsSuccessful);
-            Assert.Equal(GoogleApiResponseStatus.Ok, r.Result.Status);
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccessful);
+            Assert.Equal(GoogleApiResponseStatus.Ok, result.Result.Status);
         }
 
         [Theory(Skip = "Populate the api key above from google and enable this test")]
