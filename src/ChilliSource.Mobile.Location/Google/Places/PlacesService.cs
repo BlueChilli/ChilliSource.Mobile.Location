@@ -126,6 +126,12 @@ namespace ChilliSource.Mobile.Location.Google.Places
 
                 var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var result = JsonConvert.DeserializeObject<PlaceResponse>(content);
+
+                if (result.Status != GoogleApiResponseStatus.Ok)
+                {
+                    return OperationResult<PlaceResponse>.AsFailure(result.ErrorMessage);
+                }
+
                 return OperationResult<PlaceResponse>.AsSuccess(result);
             }
 		}
@@ -158,11 +164,15 @@ namespace ChilliSource.Mobile.Location.Google.Places
 			    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 			    var detailsResult = JsonConvert.DeserializeObject<DetailsResponse>(content);
 
-			    if (detailsResult.Status == GoogleApiResponseStatus.Ok && detailsResult.Result.Prediction != null)
+                if (detailsResult.Status != GoogleApiResponseStatus.Ok)
+                {
+                    return OperationResult<DetailsResponse>.AsFailure(detailsResult.ErrorMessage);
+                }
+
+                if (detailsResult.Result.Prediction != null)
 			    {
 			        detailsResult.Result.Prediction = prediction.Description;
                 }
-
 
                 return OperationResult<DetailsResponse>.AsSuccess(detailsResult);
             }
@@ -192,6 +202,12 @@ namespace ChilliSource.Mobile.Location.Google.Places
 
                 var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var result = JsonConvert.DeserializeObject<ReverseGeocodingResponse>(content);
+
+                if (result.Status != GoogleApiResponseStatus.Ok)
+                {
+                    return OperationResult<ReverseGeocodingResponse>.AsFailure(result.ErrorMessage);
+                }
+
                 return OperationResult<ReverseGeocodingResponse>.AsSuccess(result);
             }
         }

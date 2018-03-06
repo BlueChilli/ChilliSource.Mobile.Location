@@ -36,7 +36,7 @@ namespace Location.Tests
 	    [Theory(Skip = "Populate the api key above from google and enable this test")]
 	    //[Theory]
 	    [InlineData("ChIJ13R-ET-uEmsRmwozvQ1oFiY", "ChIJCcEZEl2uEmsR0lmLFhmrdnI")]
-        public async Task ShouldBeAbleToGetDirections(string originPlaceId, string destinationPlaceId)
+        public async Task RequestDirections_ShouldGetDirections(string originPlaceId, string destinationPlaceId)
 	    {
 	        var r = await fixture.RequestDirections(new DirectionsRequest()
 	        {
@@ -50,7 +50,7 @@ namespace Location.Tests
 	    }
 
         [Fact]
-		public void BuildDirectionsUrl_ShouldReturnURLString_ForValidRequest()
+		public void BuildDirectionsUrl_ShouldReturnUrlString_ForValidRequest()
 		{
 			var request = new DirectionsRequest()
 			{

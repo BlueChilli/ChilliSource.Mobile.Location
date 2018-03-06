@@ -30,5 +30,8 @@ namespace ChilliSource.Mobile.Location.Google.Places
 		[JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty("status")]
         public GoogleApiResponseStatus Status { get; set; }
+
+        [JsonProperty("error_message")]
+        public string ErrorMessage { get; set; }
     }			
 }
