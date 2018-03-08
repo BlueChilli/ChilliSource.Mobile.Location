@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="MSBuild.Sdk.Extras/1.2.2">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;netstandard2.0;Xamarin.iOS10;MonoAndroid44;net462</TargetFrameworks>
+    <TargetFrameworks>netstandard1.6;netstandard2.0;xamarin.ios10;monoandroid44;monoandroid8.1;net462</TargetFrameworks>
     <PackageId>ChilliSource.Mobile.Location</PackageId>
     <Product>Blue Chilli Technology</Product>
     <Description>Location library for ChilliSource.Mobile</Description>
@@ -22,15 +22,16 @@
     <IsTestProject>$(MSBuildProjectName.Contains('Tests'))</IsTestProject>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'Xamarin.iOS10'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'xamarin.ios10'">
     <OutputType>Library</OutputType>
     <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
     <SynchReleaseVersion>false</SynchReleaseVersion>
     <OutputType>Library</OutputType>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(TargetFramework)' == 'MonoAndroid44'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'monoandroid44' Or '$(TargetFramework)' == 'monoandroid8.1'">
     <TargetFrameworkIdentifier>MonoAndroid</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v8.1</TargetFrameworkVersion>
     <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
     <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
     <AndroidUseLatestPlatformSdk>true</AndroidUseLatestPlatformSdk>
@@ -59,7 +60,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'Xamarin.iOS10'">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'xamarin.ios10'">
     <Reference Include="System" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Collections" />
@@ -71,7 +72,7 @@
     <Reference Include="System.Runtime.Serialization" />
     <Compile Include="Platforms\iOS\**\*.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'MonoAndroid44'">
+ <ItemGroup Condition="'$(TargetFramework)' == 'monoandroid44' Or '$(TargetFramework)' == 'monoandroid8.1'">
     <Reference Include="Mono.Android" />
     <Reference Include="System" />
     <Reference Include="System.Collections" />
@@ -95,11 +96,6 @@
     <PackageReference Include="Xamarin.Forms.Maps" Version="2.5.0.280555" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="MSBuild.Sdk.Extras" Version="1.2.1" />
-    <PackageReference Update="SourceLink.Create.CommandLine" Version="2.8.0" />
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="Google\Places\Models\ReverseGeocoding\" />
   </ItemGroup>
-  <Import Project="$(MSBuildSDKExtrasTargets)" Condition="Exists('$(MSBuildSDKExtrasTargets)')" />
 </Project>

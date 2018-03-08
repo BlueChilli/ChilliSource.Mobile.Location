@@ -367,7 +367,8 @@ Task("RunUnitTests")
 		var settings = new DotNetCoreTestSettings
 		{
 			Configuration = configuration,
-			NoBuild = true
+			NoBuild = true,
+			NoRestore = true
 		};
 
 		DotNetCoreTest(settings, testProject,  new XUnit2Settings {
