@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace ChilliSource.Mobile.Location.Google.Places
 {
@@ -10,6 +11,17 @@ namespace ChilliSource.Mobile.Location.Google.Places
         /// The addresses nearby the specified coordinates
         /// </summary>
         [JsonProperty("results")]
-        public IEnumerable<Address> Addresses { get; set; }
+        public IEnumerable<PlaceAddress> Addresses { get; set; }
+
+
+        /// <summary>
+        /// Status of the request. See: https://developers.google.com/maps/documentation/geocoding/intro#GeocodingResponses
+        /// </summary>
+		[JsonConverter(typeof(StringEnumConverter))]
+        [JsonProperty("status")]
+        public GoogleApiResponseStatus Status { get; set; }
+
+        [JsonProperty("error_message")]
+        public string ErrorMessage { get; set; }
     }
 }

@@ -22,7 +22,7 @@ namespace ChilliSource.Mobile.Location.Tests
 
         [Fact(Skip = "Populate the api key above from google and enable this test")]
 //        [Fact]
-        public async Task ShouldBeAbleToRequestASnappedLocation()
+        public async Task RequestSnappedLocations_ShouldReturnASnappedLocation()
         {
             var r = await fixture.RequestSnappedLocations(new List<Position>()
             {

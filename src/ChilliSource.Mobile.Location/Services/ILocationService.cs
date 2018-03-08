@@ -78,17 +78,17 @@ namespace ChilliSource.Mobile.Location
         /// <summary>
         /// Triggered when the device has entered one of the regions that it was assigned to monitor
         /// </summary>
-        event EventHandler<RegionEventArgs> OnRegionEntered;
+        event EventHandler<RegionEventArgs> RegionEntered;
 
         /// <summary>
         /// Triggered when the device has left one of the regions that it was assigned to monitor
         /// </summary>
-        event EventHandler<RegionEventArgs> OnRegionLeft;
+        event EventHandler<RegionEventArgs> RegionLeft;
 
         /// <summary>
         /// Triggered when the user changes the location authorization settings for the app
         /// </summary>
-        event EventHandler<AuthorizationEventArgs> OnLocationAuthorizationChanged;
+        event EventHandler<AuthorizationEventArgs> LocationAuthorizationChanged;
 
         /// <summary>
         /// Initialize the specified authorizationType, allowBackgroundLocationUpdates, monitorRegions and logger.

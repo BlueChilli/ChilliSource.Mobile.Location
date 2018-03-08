@@ -126,6 +126,12 @@ namespace ChilliSource.Mobile.Location.Google.Places
 
                 var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var result = JsonConvert.DeserializeObject<PlaceResponse>(content);
+
+                if (result.Status != GoogleApiResponseStatus.Ok)
+                {
+                    return OperationResult<PlaceResponse>.AsFailure(result.ErrorMessage);
+                }
+
                 return OperationResult<PlaceResponse>.AsSuccess(result);
             }
 		}
@@ -135,14 +141,14 @@ namespace ChilliSource.Mobile.Location.Google.Places
         /// <param name="prediction">Search prediction</param>
         /// <returns>The place details</returns>
         /// </summary>
-        public async Task<OperationResult<DetailsResponse>> GetPlaceDetails(Prediction prediction)
+        public async Task<OperationResult<DetailsResponse>> GetPlaceDetails(string placeId)
 		{
-            if (string.IsNullOrWhiteSpace(prediction.PlaceId))
+            if (string.IsNullOrWhiteSpace(placeId))
             {
                 return OperationResult<DetailsResponse>.AsFailure("PlaceId cannot be empty");
             }
 
-			var url = _urlFactory.BuildDetailsUrl(prediction.PlaceId);
+			var url = _urlFactory.BuildDetailsUrl(placeId);
 
 			using (var client = new HttpClient())
 			{
@@ -158,12 +164,11 @@ namespace ChilliSource.Mobile.Location.Google.Places
 			    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 			    var detailsResult = JsonConvert.DeserializeObject<DetailsResponse>(content);
 
-			    if (detailsResult.Status == GoogleApiResponseStatus.Ok && detailsResult.Result.Prediction != null)
-			    {
-			        detailsResult.Result.Prediction = prediction.Description;
+                if (detailsResult.Status != GoogleApiResponseStatus.Ok)
+                {
+                    return OperationResult<DetailsResponse>.AsFailure(detailsResult.ErrorMessage);
                 }
-
-
+                
                 return OperationResult<DetailsResponse>.AsSuccess(detailsResult);
             }
 		}
@@ -192,6 +197,12 @@ namespace ChilliSource.Mobile.Location.Google.Places
 
                 var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var result = JsonConvert.DeserializeObject<ReverseGeocodingResponse>(content);
+
+                if (result.Status != GoogleApiResponseStatus.Ok)
+                {
+                    return OperationResult<ReverseGeocodingResponse>.AsFailure(result.ErrorMessage);
+                }
+
                 return OperationResult<ReverseGeocodingResponse>.AsSuccess(result);
             }
         }
